@@ -1,0 +1,82 @@
+<!-- 搜索框 -->
+<view class="search-bar">
+  <text class="search-icon">🔍</text>
+  <input class="search-input" 
+         placeholder="搜索接机、搬家、二手..." 
+         value="{{searchKeyword}}" 
+         bindinput="onSearchInput"
+         confirm-type="search" />
+  <view class="search-clear" wx:if="{{searchKeyword}}" bindtap="onClearSearch">
+    <text>✕</text>
+  </view>
+</view>
+
+<!-- 金刚区 -->
+<view class="kingkong-section">
+  <view class="kingkong-row">
+    <view class="kingkong-item" wx:for="{{kingkongRow1}}" wx:key="id" bindtap="onKingkongTap" data-type="{{item.type}}">
+      <view class="kingkong-icon" style="background: {{item.bgColor}};">
+        <text>{{item.icon}}</text>
+      </view>
+      <text class="kingkong-text">{{item.name}}</text>
+    </view>
+  </view>
+  <view class="kingkong-row">
+    <view class="kingkong-item" wx:for="{{kingkongRow2}}" wx:key="id" bindtap="onKingkongTap" data-type="{{item.type}}">
+      <view class="kingkong-icon" style="background: {{item.bgColor}};">
+        <text>{{item.icon}}</text>
+      </view>
+      <text class="kingkong-text">{{item.name}}</text>
+    </view>
+  </view>
+</view>
+
+<!-- 热门服务 -->
+<view class="section-header flex-between">
+  <text class="section-title">热门服务</text>
+  <text class="section-more text-muted">更多 →</text>
+</view>
+<scroll-view class="hot-service-scroll" scroll-x>
+  <view class="hot-service-card" wx:for="{{hotServices}}" wx:key="id">
+    <view class="hot-service-img" style="background: {{item.bgColor}};">
+      <text>{{item.icon}}</text>
+    </view>
+    <text class="hot-service-title">{{item.title}}</text>
+    <text class="text-muted">{{item.desc}}</text>
+  </view>
+</scroll-view>
+
+<!-- 最新信息 -->
+<view class="section-header">
+  <text class="section-title">最新信息</text>
+</view>
+<view class="info-list">
+  <view class="info-item card" wx:for="{{displayList}}" wx:key="id" bindtap="onInfoTap" data-id="{{item.id}}">
+    <view class="flex-row">
+      <view class="info-img" style="background: {{item.bgColor}};">
+        <text>{{item.icon}}</text>
+      </view>
+      <view class="info-content flex-column">
+        <text class="info-title text-ellipsis-2">{{item.title}}</text>
+        <view class="flex-between info-meta">
+          <text class="text-price" wx:if="{{item.price > 0}}">NZ$ {{item.price}}</text>
+          <text class="text-price" wx:else>免费</text>
+          <text class="text-muted">{{item.time}}</text>
+        </view>
+        <view class="flex-row info-footer">
+          <text class="info-tag">{{item.category}}</text>
+          <text class="text-muted">{{item.nickname}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- 搜索无结果提示 -->
+<view class="search-empty" wx:if="{{searchEmpty}}">
+  <text>🔍</text>
+  <text>没有找到相关内容</text>
+</view>
+
+<!-- 底部提示 -->
+<view class="load-more text-muted" wx:if="{{displayList.length > 0}}">— 上拉加载更多 —</view>

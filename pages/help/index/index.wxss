@@ -1,0 +1,111 @@
+/* 分类Tab */
+.category-tabs {
+  background-color: #FFFFFF;
+  white-space: nowrap;
+  padding: 16rpx 24rpx;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.tab-item {
+  display: inline-block;
+  padding: 12rpx 28rpx;
+  font-size: 26rpx;
+  color: #666666;
+  border-radius: 30rpx;
+  margin-right: 16rpx;
+  background-color: #F5F5F5;
+}
+
+.tab-active {
+  color: #FFFFFF;
+  background-color: #4A90D9;
+  font-weight: 500;
+}
+
+/* 服务卡片 */
+.service-list {
+  padding: 0 24rpx;
+}
+
+.service-card {
+  margin: 16rpx 0;
+}
+
+.service-icon {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  flex-shrink: 0;
+}
+
+.service-title {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: #333333;
+  max-width: 380rpx;
+}
+
+.service-tag {
+  font-size: 22rpx;
+  color: #4A90D9;
+  background-color: #E8F4FD;
+  padding: 4rpx 14rpx;
+  border-radius: 4rpx;
+  flex-shrink: 0;
+}
+
+.service-desc {
+  font-size: 26rpx;
+  color: #666666;
+  line-height: 1.6;
+}
+
+.service-contact {
+  font-size: 24rpx;
+  color: #666666;
+}
+
+/* 悬浮发布按钮 */
+.fab-btn {
+  position: fixed;
+  right: 32rpx;
+  bottom: 120rpx;
+  width: 100rpx;
+  height: 100rpx;
+  background: linear-gradient(135deg, #4A90D9, #6BA5E7);
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  box-shadow: 0 8rpx 24rpx rgba(74, 144, 217, 0.4);
+  z-index: 100;
+}
+
+.fab-icon {
+  font-size: 36rpx;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.fab-text {
+  font-size: 18rpx;
+  margin-top: -2rpx;
+}
+
+.load-more {
+  text-align: center;
+  padding: 30rpx 0;
+}
+
+.empty-tip {
+  text-align: center;
+  padding: 100rpx 0;
+}
