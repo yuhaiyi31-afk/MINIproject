@@ -1,0 +1,20 @@
+<view class="rent-list">
+  <view class="rent-card card" wx:for="{{items}}" wx:key="itemKey" bindtap="onDetail" data-item="{{item}}">
+    <image class="rent-img" wx:if="{{item.images && item.images.length}}" src="{{item.images[0]}}" mode="aspectFill" lazy-load fade-show></image>
+    <view class="rent-info">
+      <view class="flex-between">
+        <text class="rent-title text-ellipsis">{{item.title}}</text>
+        <text class="rent-price">{{item.price > 0 ? 'NZ$ ' + (item.priceText || item.price) : '免费'}}</text>
+      </view>
+      <text class="rent-desc text-ellipsis-2">{{item.description}}</text>
+      <view class="flex-between rent-meta">
+        <text>{{item.publisherNick || '发布者'}}</text>
+        <text>{{item.time}}</text>
+      </view>
+    </view>
+  </view>
+</view>
+
+<view class="empty" wx:if="{{items.length === 0}}">
+  <text>{{loading ? '正在读取真实房源…' : (errorText || '暂无真实房源')}}</text>
+</view>

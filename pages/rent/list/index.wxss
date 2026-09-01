@@ -1,0 +1,9 @@
+.rent-list { padding: 8rpx 24rpx 32rpx; }
+.rent-card { margin: 16rpx 0; padding: 0; overflow: hidden; }
+.rent-img { width: 100%; height: 360rpx; display: block; background: #F3F5F7; }
+.rent-info { padding: 20rpx; }
+.rent-title { flex:1; min-width:0; font-size:28rpx; font-weight:600; color:#333; }
+.rent-price { max-width:42%; min-width:0; margin-left:16rpx; overflow:hidden; font-size:28rpx; color:#FF6B35; font-weight:700; text-overflow:ellipsis; white-space:nowrap; }
+.rent-desc { margin-top: 12rpx; font-size: 25rpx; color: #666; line-height: 1.55; }
+.rent-meta { margin-top: 16rpx; font-size: 22rpx; color: #999; }
+.empty { text-align: center; padding: 120rpx 24rpx; color: #999; font-size: 26rpx; }

@@ -1,0 +1,6 @@
+.legacy-loading {
+  padding: 160rpx 24rpx;
+  text-align: center;
+  font-size: 26rpx;
+  color: #999999;
+}

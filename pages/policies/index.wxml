@@ -1,0 +1,12 @@
+<view class="policy-page">
+  <view class="policy-header">
+    <text class="policy-title">{{policy.title}}</text>
+    <text class="policy-subtitle">{{policy.subtitle}}</text>
+    <text class="policy-version">MVP version · 2026-08-14</text>
+  </view>
+  <view class="policy-section" wx:for="{{policy.sections}}" wx:key="heading">
+    <text class="policy-heading">{{item.heading}}</text>
+    <text class="policy-body">{{item.body}}</text>
+  </view>
+  <view class="policy-footnote">本页面为第一阶段产品结构文本，正式法律文本可在后续版本替换。</view>
+</view>

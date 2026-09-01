@@ -1,0 +1,10 @@
+page { background:#F4F6F8; }
+.policy-page { padding:28rpx 24rpx 70rpx; }
+.policy-header,.policy-section { padding:28rpx; border-radius:20rpx; background:#FFF; }
+.policy-title { display:block; color:#243041; font-size:36rpx; font-weight:700; }
+.policy-subtitle { display:block; margin-top:8rpx; color:#596575; font-size:25rpx; }
+.policy-version { display:block; margin-top:16rpx; color:#A0A7B2; font-size:20rpx; }
+.policy-section { margin-top:18rpx; }
+.policy-heading { display:block; color:#2D3949; font-size:28rpx; font-weight:650; }
+.policy-body { display:block; margin-top:12rpx; color:#5C6675; font-size:25rpx; line-height:1.75; }
+.policy-footnote { padding:36rpx 20rpx 0; color:#9DA5AF; font-size:21rpx; line-height:1.6; text-align:center; }

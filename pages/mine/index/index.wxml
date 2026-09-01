@@ -1,15 +1,74 @@
 <!-- 用户信息区 -->
 <view class="user-section">
   <view class="user-bg"></view>
-  <view class="user-info flex-row">
+  <!-- 未登录 -->
+  <view class="user-info flex-row" bindtap="onLoginTap" wx:if="{{!isLoggedIn}}">
     <view class="user-avatar">
       <text>👤</text>
     </view>
     <view class="user-detail flex-column">
       <text class="user-name">点击登录</text>
-      <text class="user-subtitle">登录后可查看个人信息</text>
+      <text class="user-subtitle">{{requirePhoneBinding ? '登录需绑定微信手机号' : '内测期间可直接进入'}}</text>
     </view>
     <text class="user-arrow">→</text>
+  </view>
+  <!-- 已登录 -->
+  <view class="user-info flex-row" wx:else bindtap="onUserTap">
+    <view class="user-avatar-frame">
+      <image class="user-avatar-img" src="{{avatarUrl}}" mode="aspectFill"></image>
+    </view>
+    <view class="user-detail flex-column">
+      <text class="user-name">{{nickName}}</text>
+      <text class="user-subtitle">{{requirePhoneBinding ? maskedPhone + ' · 微信身份已验证' : '内测身份'}}</text>
+      <text class="user-register">{{registeredAtText}} · {{sellerType === 'BUSINESS' ? '商业卖家' : '私人卖家'}}</text>
+      <text class="account-warning" wx:if="{{isBanned}}">账号已被限制发布和聊天</text>
+    </view>
+  </view>
+  <view class="seller-stats" wx:if="{{isLoggedIn}}">
+    <view class="seller-stat"><text class="seller-stat-number">{{activeItemsCount}}</text><text class="seller-stat-label">当前在售</text></view>
+    <view class="seller-stat-divider"></view>
+    <view class="seller-stat"><text class="seller-stat-number">{{soldItemsCount}}</text><text class="seller-stat-label">已售商品</text></view>
+  </view>
+</view>
+
+<!-- 登录弹窗 -->
+<view class="login-modal" wx:if="{{showLoginModal}}" catchtap="onCloseModal">
+  <view class="login-modal-content" catchtap="noop">
+    <view class="login-modal-title">{{isLoggedIn ? '个人信息' : '微信登录'}}</view>
+    <view class="phone-bind-card {{tempPhoneBound ? 'bound' : ''}}" wx:if="{{requirePhoneBinding}}">
+      <view class="phone-bind-copy">
+        <text class="phone-bind-title">{{tempPhoneBound ? '手机号已验证' : '绑定微信手机号'}}</text>
+        <text class="phone-bind-desc">{{tempPhoneBound ? tempMaskedPhone : '微信将验证当前账号绑定的手机号'}}</text>
+      </view>
+      <button
+        class="phone-bind-btn {{tempPhoneBound ? 'phone-change-btn' : ''}}"
+        open-type="getPhoneNumber"
+        bindgetphonenumber="onGetPhoneNumber"
+        loading="{{phoneBinding}}"
+        disabled="{{phoneBinding}}"
+      >{{tempPhoneBound ? '更换' : '一键绑定'}}</button>
+    </view>
+    <text class="login-privacy-tip" wx:if="{{requirePhoneBinding}}">手机号只用于身份验证，页面不会公开显示完整号码</text>
+    <view class="login-avatar-wrap">
+      <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+        <image class="login-avatar-preview" src="{{tempAvatarUrl || '/assets/branding/mini-program-avatar.png'}}" mode="aspectFill"></image>
+      </button>
+      <text class="login-avatar-hint">点击选择头像</text>
+    </view>
+    <view class="login-nickname-wrap">
+      <input
+        class="login-nickname-input"
+        type="nickname"
+        placeholder="请输入昵称"
+        value="{{tempNickName}}"
+        bindinput="onNicknameInput"
+        bindblur="onNicknameBlur"
+      />
+    </view>
+    <view class="login-modal-btns">
+      <button class="login-btn-cancel" bindtap="onCloseModal">取消</button>
+      <button class="login-btn-confirm" bindtap="onConfirmLogin" disabled="{{phoneBinding}}">{{isLoggedIn ? '保存' : '完成登录'}}</button>
+    </view>
   </view>
 </view>
 
@@ -20,7 +79,7 @@
       <text class="menu-icon">📋</text>
       <text class="menu-text">我的发布</text>
     </view>
-    <text class="text-muted">→</text>
+    <text class="text-muted">{{myServicesCount}}条 →</text>
   </view>
   <view class="menu-divider"></view>
   <view class="menu-item flex-between" bindtap="onMenuTap" data-type="favorite">
@@ -28,17 +87,26 @@
       <text class="menu-icon">❤️</text>
       <text class="menu-text">我的收藏</text>
     </view>
-    <text class="text-muted">→</text>
+    <text class="text-muted">{{favoritesCount}}条 →</text>
   </view>
   <view class="menu-divider"></view>
-  <view class="menu-item flex-between" bindtap="onMenuTap" data-type="booking">
+  <view class="menu-item flex-between" bindtap="onMenuTap" data-type="message">
     <view class="flex-row" style="gap: 16rpx;">
-      <text class="menu-icon">📅</text>
-      <text class="menu-text">我的预约</text>
+      <text class="menu-icon">💬</text>
+      <text class="menu-text">消息中心</text>
     </view>
-    <text class="text-muted">→</text>
+    <text class="menu-text-badge" wx:if="{{unreadMessages > 0}}">{{unreadMessages > 99 ? '99+' : unreadMessages}}</text>
+    <text class="text-muted" wx:else>→</text>
   </view>
   <view class="menu-divider"></view>
+  <view class="menu-item flex-between" bindtap="onMenuTap" data-type="admin" wx:if="{{isAdmin}}">
+    <view class="flex-row" style="gap: 16rpx;">
+      <text class="menu-icon">🛡️</text>
+      <text class="menu-text">平台管理</text>
+    </view>
+    <text class="admin-badge">管理员 →</text>
+  </view>
+  <view class="menu-divider" wx:if="{{isAdmin}}"></view>
   <view class="menu-item flex-between" bindtap="onMenuTap" data-type="settings">
     <view class="flex-row" style="gap: 16rpx;">
       <text class="menu-icon">⚙️</text>
@@ -50,6 +118,6 @@
 
 <!-- 底部信息 -->
 <view class="footer-info">
-  <text class="text-muted">奥克兰留学生小助手 v1.0.0</text>
+  <text class="text-muted">奥克兰留学生小助手 v1.3.0</text>
   <text class="footer-subtitle">Made with ❤️ for AKL Chinese Students</text>
 </view>

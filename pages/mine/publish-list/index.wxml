@@ -1,0 +1,49 @@
+<!-- 列表 -->
+<view class="list-wrap">
+  <view class="publish-card card" wx:for="{{list}}" wx:key="itemKey" bindtap="onItemTap" data-item="{{item}}">
+    <view class="flex-row">
+      <view class="publish-icon" wx:if="{{item.images && item.images.length > 0}}">
+        <image src="{{item.images[0]}}" mode="aspectFill" lazy-load fade-show></image>
+      </view>
+      <view class="publish-info flex-column">
+        <text class="publish-title text-ellipsis">{{item.title}}</text>
+        <view class="flex-row" style="gap:8rpx; margin-top:6rpx;">
+          <text class="text-price-sm" wx:if="{{item.price > 0}}">NZ$ {{item.priceText || item.price}}</text>
+          <text class="text-price-sm" wx:else>免费</text>
+          <text class="publish-status {{item.status === 'active' ? 'status-on' : 'status-off'}}">
+            {{item.status === 'deleting' ? '待清理' : (item.status === 'deleted' ? '已删除' : (item.status === 'suspended' ? '平台暂停' : (item.status === 'sold' ? '已售' : (item.status === 'unlisted' ? '已下架' : '在售'))))}}
+          </text>
+        </view>
+        <text class="text-muted" style="margin-top:4rpx;">{{item.time}} · {{item.publishType || 'market'}}</text>
+      </view>
+    </view>
+    <!-- 操作按钮 -->
+    <view class="flex-row publish-actions">
+      <text class="act-btn act-edit" bindtap="onEdit" data-id="{{item.id}}" catchtap="onEdit" wx:if="{{item.status !== 'deleting' && item.status !== 'deleted'}}">✏️ 编辑</text>
+      <text class="act-btn act-unlist" bindtap="onUnlist" data-id="{{item.id}}" catchtap="onUnlist" wx:if="{{item.status === 'active'}}">⬇️ 下架</text>
+      <text class="act-btn act-sold" bindtap="onMarkSold" data-id="{{item.id}}" catchtap="onMarkSold" wx:if="{{item.status === 'active'}}">✓ 已售</text>
+      <text class="act-btn act-relist" bindtap="onRelist" data-id="{{item.id}}" catchtap="onRelist" wx:if="{{item.status === 'unlisted' || item.status === 'sold'}}">↑ 重新上架</text>
+      <text class="act-btn act-delete" bindtap="onDelete" data-id="{{item.id}}" catchtap="onDelete" wx:if="{{item.status !== 'deleted'}}">🗑️ {{item.status === 'deleting' ? '重试清理' : '删除'}}</text>
+    </view>
+  </view>
+</view>
+
+<!-- 空态 -->
+<view class="empty-tip" wx:if="{{list.length === 0}}">
+  <text style="font-size:28rpx;color:#999;margin-top:16rpx;">暂无发布内容</text>
+  <text style="font-size:24rpx;color:#CCC;">去发布你的第一条信息吧</text>
+</view>
+
+<!-- 确认弹窗 -->
+<view class="action-modal" wx:if="{{showAction}}" catchtap="onCancelAction">
+  <view class="action-modal-content" catchtap="noop">
+    <text class="action-modal-title">{{actionType === 'delete' ? '确认删除' : (actionType === 'sold' ? '确认已经售出' : (actionType === 'relist' ? '确认重新上架' : '确认下架'))}}</text>
+    <text class="action-modal-desc">
+      {{actionType === 'delete' ? '商品会停止展示，图片和视频将清理；平台保留最小化状态记录用于安全追踪。确定删除“' + actionItem.title + '”吗？' : (actionType === 'sold' ? '标记已售后商品不再公开展示，之后仍可重新上架。' : (actionType === 'relist' ? '商品会恢复到公开集市，请先确认信息、价格和图片仍然准确。' : '下架后不再公开展示，但保留资料便于修改后重新上架。'))}}
+    </text>
+    <view class="login-modal-btns">
+      <button class="login-btn-cancel" bindtap="onCancelAction">取消</button>
+      <button class="login-btn-confirm" bindtap="onConfirmAction" style="background:#FF5252;">确认</button>
+    </view>
+  </view>
+</view>

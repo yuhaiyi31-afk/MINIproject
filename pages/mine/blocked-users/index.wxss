@@ -1,0 +1,10 @@
+page { background:#F4F6F8; }
+.blocked-page { padding:24rpx; }
+.blocked-note { padding:20rpx 22rpx; border-radius:14rpx; background:#FFF7E8; color:#8A682E; font-size:22rpx; line-height:1.55; }
+.state { padding:120rpx 20rpx; color:#929AA6; font-size:25rpx; text-align:center; }
+.state.error { color:#C64D43; }
+.blocked-card { display:flex; margin-top:16rpx; padding:22rpx; align-items:center; border-radius:18rpx; background:#FFF; }
+.blocked-avatar { display:flex; width:76rpx; height:76rpx; flex-shrink:0; align-items:center; justify-content:center; border-radius:50%; background:#E7F0FA; color:#3478C9; }
+.blocked-name { flex:1; min-width:0; margin-left:18rpx; overflow:hidden; color:#303A49; font-size:27rpx; text-overflow:ellipsis; white-space:nowrap; }
+.unblock-btn { width:150rpx; height:62rpx; margin:0; padding:0; border-radius:32rpx; background:#EFF3F7; color:#586473; font-size:22rpx; line-height:62rpx; }
+.unblock-btn::after { border:none; }

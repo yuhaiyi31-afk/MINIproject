@@ -1,0 +1,74 @@
+<view class="message-page">
+  <view class="message-summary">
+    <view>
+      <text class="summary-title">交易消息</text>
+      <text class="summary-subtitle">及时处理买家的咨询与购买意向</text>
+    </view>
+    <view class="summary-unread">
+      <text class="summary-number">{{stats.unread}}</text>
+      <text class="summary-label">未读</text>
+    </view>
+  </view>
+
+  <view class="message-stats">
+    <view class="stat-item">
+      <text class="stat-icon chat">💬</text>
+      <text class="stat-number">{{stats.chat}}</text>
+      <text class="stat-label">会话</text>
+    </view>
+    <view class="stat-item">
+      <text class="stat-icon purchase">🛍️</text>
+      <text class="stat-number">{{stats.purchase}}</text>
+      <text class="stat-label">想购买</text>
+    </view>
+    <view class="stat-item">
+      <text class="stat-icon favorite">❤️</text>
+      <text class="stat-number">{{stats.favorite}}</text>
+      <text class="stat-label">被收藏</text>
+    </view>
+  </view>
+
+  <view class="message-toolbar">
+    <scroll-view class="message-tabs" scroll-x enable-flex>
+      <view
+        class="message-tab {{currentTab === item.key ? 'active' : ''}}"
+        wx:for="{{tabs}}"
+        wx:key="key"
+        data-key="{{item.key}}"
+        bindtap="onTabTap"
+      >{{item.label}}</view>
+    </scroll-view>
+    <text class="read-all" wx:if="{{stats.unread > 0}}" bindtap="onMarkAllRead">全部已读</text>
+  </view>
+
+  <view class="message-list" wx:if="{{cards.length > 0}}">
+    <view
+      class="message-card {{item.read ? '' : 'unread'}}"
+      wx:for="{{cards}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="onCardTap"
+    >
+      <view class="message-avatar type-{{item.type}}">
+        <image wx:if="{{item.avatar}}" src="{{item.avatar}}" mode="aspectFill" lazy-load fade-show></image>
+        <text wx:else>{{item.icon}}</text>
+      </view>
+      <view class="message-body">
+        <view class="message-line">
+          <text class="message-title">{{item.title}}</text>
+          <text class="message-time">{{item.timeText}}</text>
+        </view>
+        <text class="message-item-title">{{item.subtitle}}</text>
+        <text class="message-preview">{{item.preview}}</text>
+      </view>
+      <view class="unread-dot" wx:if="{{!item.read}}"></view>
+    </view>
+  </view>
+
+  <view class="message-empty" wx:else>
+    <view class="empty-icon">{{errorText ? '!' : '💬'}}</view>
+    <text class="empty-title">{{loading ? '正在读取消息…' : (errorText || '暂时没有这类消息')}}</text>
+    <text class="empty-text" wx:if="{{!loading && !errorText}}">收藏、购买意向和聊天都会出现在这里</text>
+    <text class="empty-retry" wx:if="{{errorText}}" bindtap="refreshMessages">点击重试</text>
+  </view>
+</view>

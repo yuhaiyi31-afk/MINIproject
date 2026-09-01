@@ -9,32 +9,40 @@
 
 <!-- 服务卡片列表 -->
 <view class="service-list">
-  <view class="service-card card" wx:for="{{filteredList}}" wx:key="id" bindtap="onServiceTap" data-id="{{item.id}}">
+  <view class="service-card card" wx:for="{{filteredList}}" wx:key="itemKey" bindtap="onServiceTap" data-item="{{item}}">
     <view class="flex-between" style="margin-bottom: 12rpx;">
       <view class="flex-row" style="gap: 12rpx;">
         <view class="service-icon" style="background: {{item.bgColor}};">
-          <text>{{item.icon}}</text>
+          <image wx:if="{{item.images && item.images.length > 0}}" class="service-cover" src="{{item.images[0]}}" mode="aspectFill" lazy-load fade-show></image>
+          <text wx:else>{{item.icon}}</text>
         </view>
         <text class="service-title text-ellipsis">{{item.title}}</text>
       </view>
-      <text class="service-tag">{{item.tag}}</text>
+      <view class="service-tags-row">
+        <text class="service-tag">{{item.tag}}</text>
+      </view>
     </view>
     <text class="service-desc text-ellipsis-2">{{item.desc}}</text>
+
     <view class="flex-between" style="margin-top: 16rpx;">
-      <text class="service-contact">📞 {{item.contact}}</text>
+      <view class="flex-row" style="gap:8rpx;">
+        <text class="service-contact">通过小程序聊天联系</text>
+        <text class="badge-promise" wx:if="{{item.isPromise}}">🤝 承诺真实</text>
+      </view>
       <text class="text-muted">{{item.time}}</text>
     </view>
   </view>
 </view>
 
-<!-- 底部提示 -->
-<view class="load-more text-muted" wx:if="{{filteredList.length > 0}}">— 上拉加载更多 —</view>
-<view class="empty-tip" wx:else>
-  <text class="text-muted">暂无相关服务信息</text>
+<view class="empty-tip" wx:if="{{filteredList.length === 0}}">
+  <text class="text-muted">{{loading ? '正在读取真实信息…' : (errorText || '暂无相关服务信息')}}</text>
+  <view class="empty-publish-btn" bindtap="onPublishTap" data-type="{{tabs[currentTab]}}">
+    <text>＋ 发布第一条{{tabs[currentTab]}}信息</text>
+  </view>
 </view>
 
 <!-- 悬浮发布按钮 -->
-<view class="fab-btn" bindtap="onPublishTap">
+<view class="fab-btn" bindtap="onPublishTap" data-type="{{tabs[currentTab]}}">
   <text class="fab-icon">＋</text>
   <text class="fab-text">发布</text>
 </view>

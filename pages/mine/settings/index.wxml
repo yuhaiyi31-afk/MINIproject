@@ -1,0 +1,31 @@
+<view class="settings-page">
+  <view class="settings-card" wx:if="{{isLoggedIn}}">
+    <text class="profile-name">{{nickName}}</text>
+    <text class="profile-hint">当前登录用户</text>
+  </view>
+
+  <view class="settings-card">
+    <view class="settings-row" bindtap="onBlockedUsers" wx:if="{{isLoggedIn}}"><text>已拉黑用户</text><text class="arrow">→</text></view>
+    <view class="divider" wx:if="{{isLoggedIn}}"></view>
+    <view class="settings-row" bindtap="onClearCache"><text>清理本地缓存</text><text class="arrow">→</text></view>
+  </view>
+
+  <view class="section-title">协议与安全</view>
+  <view class="settings-card">
+    <view class="settings-row" data-type="terms" bindtap="onPolicyTap"><text>Terms of Use</text><text class="arrow">→</text></view>
+    <view class="divider"></view>
+    <view class="settings-row" data-type="privacy" bindtap="onPolicyTap"><text>Privacy Policy</text><text class="arrow">→</text></view>
+    <view class="divider"></view>
+    <view class="settings-row" data-type="community" bindtap="onPolicyTap"><text>Community Guidelines</text><text class="arrow">→</text></view>
+    <view class="divider"></view>
+    <view class="settings-row" data-type="prohibited" bindtap="onPolicyTap"><text>Prohibited Items Policy</text><text class="arrow">→</text></view>
+    <view class="divider"></view>
+    <view class="settings-row" data-type="safety" bindtap="onPolicyTap"><text>Safety Guidelines</text><text class="arrow">→</text></view>
+  </view>
+
+  <view class="settings-card" wx:if="{{isLoggedIn}}">
+    <view class="settings-row logout" bindtap="onLogout"><text>退出登录</text><text class="arrow">→</text></view>
+  </view>
+
+  <view class="version">v1.3.0</view>
+</view>

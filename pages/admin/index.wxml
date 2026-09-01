@@ -1,0 +1,75 @@
+<view class="admin-page">
+  <view class="admin-header">
+    <text class="admin-title">平台管理</text>
+    <text class="admin-subtitle">举报、发布和用户状态均来自云端真实数据</text>
+  </view>
+
+  <view class="admin-tabs">
+    <view class="admin-tab {{tab === 'reports' ? 'active' : ''}}" data-tab="reports" bindtap="onTab">举报</view>
+    <view class="admin-tab {{tab === 'items' ? 'active' : ''}}" data-tab="items" bindtap="onTab">发布</view>
+    <view class="admin-tab {{tab === 'users' ? 'active' : ''}}" data-tab="users" bindtap="onTab">用户</view>
+  </view>
+
+  <view class="state-card" wx:if="{{loading}}">正在读取云端数据…</view>
+  <view class="state-card error" wx:elif="{{loadError}}">{{loadError}}</view>
+
+  <block wx:elif="{{tab === 'reports'}}">
+    <view class="empty-card" wx:if="{{!reports.length}}">暂无举报记录</view>
+    <view class="report-card" wx:for="{{reports}}" wx:key="id">
+      <view class="card-top">
+        <image wx:if="{{item.itemThumb}}" class="item-thumb" src="{{item.itemThumb}}" mode="aspectFill" lazy-load></image>
+        <view class="card-copy">
+          <text class="item-title">{{item.itemTitle}}</text>
+          <text class="card-meta">{{item.targetType === 'user' ? '用户举报' : (item.itemType === 'service' ? '服务举报' : '商品举报')}} · {{item.timeText}}</text>
+        </view>
+        <text class="status {{item.status}}">{{item.statusText}}</text>
+      </view>
+      <view class="report-reason">{{item.reason}}</view>
+      <text class="report-detail" wx:if="{{item.detail}}">{{item.detail}}</text>
+      <view class="people-row">
+        <text>举报人：{{item.reporterName}}</text>
+        <text>发布者：{{item.ownerName}}</text>
+      </view>
+      <text class="resolution" wx:if="{{item.resolutionText}}">处理结果：{{item.resolutionText}}</text>
+      <view class="action-row" wx:if="{{item.status === 'pending'}}">
+        <button class="action ghost" data-id="{{item.id}}" data-action="dismiss" bindtap="onReportAction" disabled="{{busyId}}">忽略</button>
+        <button class="action warn" data-id="{{item.id}}" data-action="suspend" bindtap="onReportAction" disabled="{{busyId}}" wx:if="{{item.targetType !== 'user'}}">暂停</button>
+        <button class="action danger-outline" data-id="{{item.id}}" data-action="delete" bindtap="onReportAction" disabled="{{busyId}}" wx:if="{{item.targetType !== 'user'}}">软删除</button>
+        <button class="action danger" data-id="{{item.id}}" data-action="ban" bindtap="onReportAction" disabled="{{busyId}}">暂停并封禁</button>
+      </view>
+    </view>
+  </block>
+
+  <block wx:elif="{{tab === 'items'}}">
+    <view class="empty-card" wx:if="{{!items.length}}">暂无发布记录</view>
+    <view class="list-card" wx:for="{{items}}" wx:key="id">
+      <image wx:if="{{item.thumb}}" class="list-avatar square" src="{{item.thumb}}" mode="aspectFill" lazy-load></image>
+      <view class="list-copy">
+        <text class="list-title">{{item.title}}</text>
+        <text class="card-meta">{{item.ownerName}} · {{item.timeText}}</text>
+        <text class="list-status {{item.status}}">{{item.statusText}}</text>
+      </view>
+      <view class="item-admin-actions" wx:if="{{item.status !== 'deleted' && item.status !== 'deleting'}}">
+        <button wx:if="{{item.status === 'active'}}" class="small-action danger-outline" data-id="{{item.id}}" data-status="suspended" bindtap="onItemStatus" disabled="{{busyId}}">暂停</button>
+        <button wx:if="{{item.status === 'suspended'}}" class="small-action restore" data-id="{{item.id}}" data-status="active" bindtap="onItemStatus" disabled="{{busyId}}">恢复</button>
+        <button class="small-action danger-outline" data-id="{{item.id}}" data-status="deleted" bindtap="onItemStatus" disabled="{{busyId}}">删除</button>
+      </view>
+    </view>
+  </block>
+
+  <block wx:else>
+    <view class="empty-card" wx:if="{{!users.length}}">暂无用户记录</view>
+    <view class="list-card" wx:for="{{users}}" wx:key="id">
+      <image wx:if="{{item.avatarUrl}}" class="list-avatar" src="{{item.avatarUrl}}" mode="aspectFill" lazy-load></image>
+      <view wx:else class="list-avatar fallback">{{item.initial}}</view>
+      <view class="list-copy">
+        <text class="list-title">{{item.nickName}}</text>
+        <text class="card-meta">{{item.status === 'banned' ? '封禁于' : '资料更新于'}} {{item.timeText}}</text>
+        <text class="ban-reason" wx:if="{{item.banReason}}">{{item.banReason}}</text>
+      </view>
+      <button class="small-action {{item.status === 'banned' ? 'restore' : 'danger-outline'}}" data-id="{{item.id}}" data-status="{{item.status}}" bindtap="onUserToggle" disabled="{{busyId}}">{{item.status === 'banned' ? '解封' : '封禁'}}</button>
+    </view>
+  </block>
+
+  <view class="admin-footnote" wx:if="{{!loading && !loadError}}">仅展示最近 50 条记录 · 下拉可刷新</view>
+</view>

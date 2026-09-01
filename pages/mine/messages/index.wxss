@@ -1,0 +1,41 @@
+page { background:#F4F6F8; }
+.message-page { padding:24rpx; box-sizing:border-box; }
+.message-summary { display:flex; align-items:center; justify-content:space-between; padding:30rpx; border-radius:24rpx; background:linear-gradient(135deg,#397FD6,#67A9EA); color:#FFF; box-shadow:0 10rpx 26rpx rgba(57,127,214,.2); }
+.summary-title { display:block; font-size:34rpx; font-weight:700; }
+.summary-subtitle { display:block; margin-top:8rpx; font-size:23rpx; color:rgba(255,255,255,.82); }
+.summary-unread { width:92rpx; height:92rpx; border-radius:28rpx; background:rgba(255,255,255,.18); display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.summary-number { font-size:34rpx; font-weight:700; line-height:1; }
+.summary-label { margin-top:7rpx; font-size:20rpx; color:rgba(255,255,255,.8); }
+.message-stats { display:flex; margin-top:20rpx; padding:24rpx 8rpx; background:#FFF; border-radius:20rpx; box-shadow:0 5rpx 18rpx rgba(31,45,61,.05); }
+.stat-item { width:33.333%; display:flex; flex-direction:column; align-items:center; }
+.stat-icon { width:64rpx; height:64rpx; display:flex; align-items:center; justify-content:center; border-radius:20rpx; font-size:30rpx; }
+.stat-icon.chat { background:#EAF3FF; }
+.stat-icon.purchase { background:#FFF1E6; }
+.stat-icon.favorite { background:#FFECEF; }
+.stat-number { margin-top:9rpx; font-size:28rpx; font-weight:700; color:#2F3542; }
+.stat-label { margin-top:2rpx; font-size:21rpx; color:#939AA5; }
+.message-toolbar { display:flex; align-items:center; margin-top:26rpx; }
+.message-tabs { flex:1; min-width:0; white-space:nowrap; }
+.message-tab { display:inline-flex; align-items:center; justify-content:center; height:58rpx; padding:0 24rpx; margin-right:10rpx; border-radius:29rpx; background:#FFF; color:#667085; font-size:24rpx; box-sizing:border-box; }
+.message-tab.active { background:#4A90D9; color:#FFF; font-weight:600; }
+.read-all { flex-shrink:0; margin-left:14rpx; font-size:23rpx; color:#4A90D9; }
+.message-list { margin-top:16rpx; }
+.message-card { position:relative; display:flex; align-items:center; padding:24rpx; margin-bottom:14rpx; border-radius:20rpx; background:#FFF; border:2rpx solid transparent; box-shadow:0 4rpx 16rpx rgba(31,45,61,.045); }
+.message-card.unread { border-color:#D9EAFB; background:#FBFDFF; }
+.message-avatar { width:84rpx; height:84rpx; flex:0 0 84rpx; overflow:hidden; display:flex; align-items:center; justify-content:center; border-radius:26rpx; background:#EAF3FF; font-size:34rpx; }
+.message-avatar.type-purchase { background:#FFF1E6; }
+.message-avatar.type-favorite { background:#FFECEF; }
+.message-avatar image { width:100%; height:100%; }
+.message-body { flex:1; min-width:0; margin-left:20rpx; }
+.message-line { display:flex; align-items:center; justify-content:space-between; gap:12rpx; }
+.message-title { flex:1; min-width:0; font-size:27rpx; color:#273142; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.message-time { flex-shrink:0; font-size:20rpx; color:#A3AAB5; }
+.message-item-title { display:block; margin-top:6rpx; font-size:23rpx; color:#4A90D9; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.message-preview { display:block; margin-top:5rpx; font-size:23rpx; color:#8A929E; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.unread-dot { position:absolute; top:22rpx; right:20rpx; width:12rpx; height:12rpx; border-radius:50%; background:#FF5C5C; }
+.message-card.unread .message-time { margin-right:20rpx; }
+.message-empty { padding:120rpx 24rpx; display:flex; flex-direction:column; align-items:center; }
+.empty-icon { width:120rpx; height:120rpx; display:flex; align-items:center; justify-content:center; border-radius:38rpx; background:#EAF3FF; font-size:54rpx; }
+.empty-title { margin-top:26rpx; font-size:29rpx; color:#3E4652; font-weight:600; }
+.empty-text { margin-top:10rpx; font-size:23rpx; color:#9AA1AC; text-align:center; }
+.empty-retry { margin-top:24rpx; padding:12rpx 28rpx; border-radius:28rpx; background:#EAF3FF; color:#397FD6; font-size:24rpx; }

@@ -1,0 +1,12 @@
+<view class="blocked-page">
+  <view class="blocked-note">被拉黑用户的公开发布会隐藏，双方不能继续发送新消息。</view>
+  <view class="state" wx:if="{{loading}}">正在读取…</view>
+  <view class="state error" wx:elif="{{errorText}}">{{errorText}}</view>
+  <view class="state" wx:elif="{{!users.length}}">暂无已拉黑用户</view>
+  <view class="blocked-card" wx:for="{{users}}" wx:key="id">
+    <image class="blocked-avatar" wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}" mode="aspectFill"></image>
+    <view class="blocked-avatar fallback" wx:else>{{item.initial}}</view>
+    <text class="blocked-name">{{item.nickName}}</text>
+    <button class="unblock-btn" data-id="{{item.id}}" bindtap="onUnblock" loading="{{busyId === item.id}}" disabled="{{busyId}}">取消拉黑</button>
+  </view>
+</view>

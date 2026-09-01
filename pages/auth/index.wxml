@@ -1,0 +1,88 @@
+<view class="auth-page">
+  <view class="auth-brand">
+    <image class="auth-logo" src="/assets/branding/mini-program-avatar.png" mode="aspectFill"></image>
+    <text class="auth-name">奥克兰留学生小助手</text>
+    <text class="auth-slogan">真实身份 · 安心沟通</text>
+  </view>
+
+  <view class="auth-card" wx:if="{{checking}}">
+    <view class="checking-dot"></view>
+    <text class="checking-text">正在确认微信身份…</text>
+  </view>
+
+  <view class="auth-card" wx:elif="{{step === 'test-error'}}">
+    <view class="step-copy">
+      <text class="step-title">内测身份初始化失败</text>
+      <text class="step-desc">请检查网络后重新进入</text>
+    </view>
+    <button class="primary-button" bindtap="onRetryInternalTest">重新进入</button>
+  </view>
+
+  <view class="auth-card consent-card" wx:elif="{{step === 'consent'}}">
+    <view class="step-copy">
+      <text class="step-title">使用前请确认平台规则</text>
+      <text class="step-desc">平台只提供信息发布、发现和联系，不代收交易款，也不提供资金托管或赔付。</text>
+    </view>
+    <view class="consent-check" bindtap="onTogglePolicy">
+      <view class="consent-box {{policyChecked ? 'checked' : ''}}">{{policyChecked ? '✓' : ''}}</view>
+      <text>我已阅读并同意</text>
+      <text class="consent-link" data-type="terms" catchtap="onPolicyLink">用户协议</text>
+      <text>和</text>
+      <text class="consent-link" data-type="privacy" catchtap="onPolicyLink">隐私政策</text>
+    </view>
+    <view class="consent-links">
+      <text data-type="community" bindtap="onPolicyLink">社区规范</text>
+      <text data-type="prohibited" bindtap="onPolicyLink">禁售政策</text>
+      <text data-type="safety" bindtap="onPolicyLink">安全指南</text>
+    </view>
+    <button class="primary-button" bindtap="onAcceptPolicies" loading="{{policySaving}}" disabled="{{policySaving}}">同意并进入小程序</button>
+  </view>
+
+  <view class="auth-card" wx:elif="{{step === 'phone'}}">
+    <view class="step-head">
+      <text class="step-number">1</text>
+      <view class="step-copy">
+        <text class="step-title">绑定微信手机号</text>
+        <text class="step-desc">用于确认真实微信身份，完整号码不会公开</text>
+      </view>
+    </view>
+    <button
+      class="wechat-button"
+      open-type="getPhoneNumber"
+      bindgetphonenumber="onGetPhoneNumber"
+      loading="{{phoneBinding}}"
+      disabled="{{phoneBinding}}"
+    >一键绑定并继续</button>
+    <text class="auth-rule">必须完成手机号授权才能进入小程序</text>
+  </view>
+
+  <view class="auth-card profile-card" wx:elif="{{step === 'profile'}}">
+    <view class="verified-phone">
+      <text class="verified-icon">✓</text>
+      <text>手机号已验证：{{maskedPhone}}</text>
+    </view>
+    <view class="step-head profile-head">
+      <text class="step-number">2</text>
+      <view class="step-copy">
+        <text class="step-title">确认微信头像和昵称</text>
+        <text class="step-desc">只需首次手动确认，之后会自动登录</text>
+      </view>
+    </view>
+    <button class="avatar-button" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+      <image class="avatar-preview" src="{{tempAvatarUrl || '/assets/branding/mini-program-avatar.png'}}" mode="aspectFill"></image>
+      <text class="avatar-action">选择微信头像</text>
+    </button>
+    <input
+      class="nickname-input"
+      type="nickname"
+      value="{{tempNickName}}"
+      placeholder="确认微信昵称"
+      bindinput="onNicknameInput"
+      bindblur="onNicknameBlur"
+    />
+    <button class="primary-button" bindtap="onConfirmProfile" loading="{{profileSaving}}" disabled="{{profileSaving}}">确认并进入小程序</button>
+  </view>
+
+  <text class="auth-error" wx:if="{{errorText}}">{{errorText}}</text>
+  <text class="privacy-note">身份资料仅用于账号登录、交易沟通与平台安全管理</text>
+</view>

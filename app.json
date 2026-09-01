@@ -1,9 +1,24 @@
 {
   "pages": [
+    "pages/auth/index",
     "pages/index/index",
     "pages/market/list/list",
     "pages/help/index/index",
-    "pages/mine/index/index"
+    "pages/mine/index/index",
+    "pages/mine/publish-list/index",
+    "pages/mine/collection-list/index",
+    "pages/mine/messages/index",
+    "pages/mine/settings/index",
+    "pages/mine/blocked-users/index",
+    "pages/policies/index",
+    "pages/admin/index",
+    "pages/chat/index",
+    "pages/publish/index",
+    "pages/search/result",
+    "pages/detail/detail/index",
+    "pages/market/detail/index",
+    "pages/rent/list/index",
+    "pages/rent/detail/index"
   ],
   "window": {
     "navigationBarBackgroundColor": "#4A90D9",
@@ -17,22 +32,10 @@
     "backgroundColor": "#FFFFFF",
     "borderStyle": "black",
     "list": [
-      {
-        "pagePath": "pages/index/index",
-        "text": "首页"
-      },
-      {
-        "pagePath": "pages/market/list/list",
-        "text": "集市"
-      },
-      {
-        "pagePath": "pages/help/index/index",
-        "text": "帮帮忙"
-      },
-      {
-        "pagePath": "pages/mine/index/index",
-        "text": "我的"
-      }
+      { "pagePath": "pages/index/index", "text": "首页" },
+      { "pagePath": "pages/market/list/list", "text": "集市" },
+      { "pagePath": "pages/help/index/index", "text": "服务大厅" },
+      { "pagePath": "pages/mine/index/index", "text": "我的" }
     ]
   },
   "style": "v2",

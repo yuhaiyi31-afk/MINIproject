@@ -1,0 +1,584 @@
+page {
+  background: #F4F6F8;
+}
+
+.detail-status {
+  min-height: 60vh;
+  padding: 180rpx 48rpx 80rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  color: #9AA2AE;
+  font-size: 26rpx;
+  text-align: center;
+}
+
+.detail-status-title {
+  color: #303A49;
+  font-size: 32rpx;
+  font-weight: 600;
+}
+
+.detail-status-text {
+  margin-top: 16rpx;
+  line-height: 1.6;
+}
+
+.detail-page {
+  min-height: 100vh;
+  padding-bottom: calc(154rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+/* 商品媒体 */
+.media-section {
+  position: relative;
+  width: 100%;
+  background: #EDF1F5;
+}
+
+.detail-video-player {
+  width: 100%;
+  height: 440rpx;
+  display: block;
+  background: #111820;
+}
+
+.detail-video-placeholder {
+  position: relative;
+  width: 100%;
+  height: 440rpx;
+  overflow: hidden;
+  background: #111820;
+}
+
+.detail-video-poster,
+.detail-video-mask {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.detail-video-poster {
+  display: block;
+}
+
+.detail-video-mask {
+  background: rgba(10, 18, 28, .28);
+}
+
+.detail-video-play {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  transform: translate(-50%, -50%);
+  flex-direction: column;
+  color: #FFFFFF;
+}
+
+.detail-video-play-icon {
+  width: 92rpx;
+  height: 92rpx;
+  padding-left: 7rpx;
+  box-sizing: border-box;
+  border: 2rpx solid rgba(255, 255, 255, .78);
+  border-radius: 50%;
+  background: rgba(16, 27, 39, .64);
+  font-size: 38rpx;
+  line-height: 88rpx;
+  text-align: center;
+}
+
+.detail-video-play-text {
+  margin-top: 14rpx;
+  font-size: 25rpx;
+  font-weight: 600;
+  text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, .35);
+}
+
+.detail-swiper {
+  width: 100%;
+  height: 520rpx;
+}
+
+.swiper-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.image-counter {
+  position: absolute;
+  right: 24rpx;
+  bottom: 20rpx;
+  min-width: 68rpx;
+  height: 40rpx;
+  padding: 0 14rpx;
+  box-sizing: border-box;
+  border-radius: 22rpx;
+  background: rgba(20, 28, 38, .68);
+  color: #FFFFFF;
+  font-size: 22rpx;
+  line-height: 40rpx;
+  text-align: center;
+}
+
+/* 商品主体信息 */
+.product-card,
+.detail-card {
+  margin: 18rpx 20rpx 0;
+  padding: 28rpx;
+  border-radius: 22rpx;
+  background: #FFFFFF;
+  box-shadow: 0 4rpx 18rpx rgba(34, 48, 68, .05);
+}
+
+.price-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 58rpx;
+}
+
+.detail-price {
+  display: flex;
+  min-width: 0;
+  max-width: 72%;
+  align-items: baseline;
+  overflow: hidden;
+  color: #FF5A36;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.price-symbol {
+  flex-shrink: 0;
+  margin-right: 8rpx;
+  font-size: 26rpx;
+}
+
+.price-value {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 48rpx;
+  letter-spacing: -1rpx;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.free-price {
+  font-size: 40rpx;
+}
+
+.category-pill {
+  max-width: 220rpx;
+  padding: 8rpx 16rpx;
+  overflow: hidden;
+  border-radius: 22rpx;
+  background: #F1F6FC;
+  color: #4779AF;
+  font-size: 22rpx;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.product-pills { display:flex; max-width:52%; align-items:center; justify-content:flex-end; gap:8rpx; }
+.status-pill { flex-shrink:0; padding:8rpx 14rpx; border-radius:22rpx; background:#EAF7F0; color:#27865A; font-size:21rpx; }
+.status-pill.sold { background:#EEF0F3; color:#6F7885; }
+.status-pill.unlisted,.status-pill.suspended { background:#FFF2E8; color:#C87435; }
+
+.detail-title {
+  display: block;
+  margin-top: 18rpx;
+  color: #1F2937;
+  font-size: 34rpx;
+  font-weight: 650;
+  line-height: 1.48;
+  word-break: break-all;
+}
+
+.description-block {
+  margin-top: 26rpx;
+  padding-top: 24rpx;
+  border-top: 1rpx solid #EEF1F4;
+}
+
+.product-facts { margin-top:24rpx; padding:8rpx 20rpx; border-radius:16rpx; background:#F7F9FB; }
+.fact-row { display:flex; min-height:66rpx; align-items:center; justify-content:space-between; border-bottom:1rpx solid #E9EDF1; }
+.fact-row:last-child { border-bottom:none; }
+.fact-label { color:#89929F; font-size:23rpx; }
+.fact-value { max-width:68%; color:#374151; font-size:24rpx; text-align:right; }
+
+.section-label,
+.card-heading {
+  display: block;
+  color: #1F2937;
+  font-size: 28rpx;
+  font-weight: 650;
+}
+
+.detail-desc {
+  display: block;
+  margin-top: 14rpx;
+  color: #596273;
+  font-size: 27rpx;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 24rpx;
+  color: #A0A7B2;
+  font-size: 22rpx;
+}
+
+/* 卖家信息 */
+.seller-card {
+  padding-top: 24rpx;
+  padding-bottom: 24rpx;
+}
+
+.seller-content {
+  display: flex;
+  align-items: center;
+  margin-top: 20rpx;
+}
+
+.seller-avatar-image,
+.seller-avatar-fallback {
+  width: 82rpx;
+  height: 82rpx;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.seller-avatar-image {
+  display: block;
+  background: #EEF3F8;
+}
+
+.seller-avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #DCEBFA, #EEF5FC);
+  color: #4A90D9;
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.seller-copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  margin-left: 18rpx;
+  flex-direction: column;
+}
+
+.seller-name {
+  overflow: hidden;
+  color: #273142;
+  font-size: 28rpx;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seller-note {
+  margin-top: 7rpx;
+  color: #9AA2AE;
+  font-size: 21rpx;
+}
+
+.seller-chat-btn {
+  width: 128rpx;
+  height: 60rpx;
+  margin: 0 0 0 18rpx;
+  padding: 0;
+  border-radius: 32rpx;
+  background: #EDF5FF;
+  color: #3478C9;
+  font-size: 24rpx;
+  font-weight: 600;
+  line-height: 60rpx;
+}
+
+.seller-chat-btn::after,
+.detail-bottom-bar button::after,
+.report-btns button::after {
+  border: none;
+}
+
+/* 安全提示 */
+.buyer-protect {
+  border: 1rpx solid #F2DFAD;
+  background: #FFFAED;
+  box-shadow: none;
+}
+
+.protect-header {
+  display: flex;
+  align-items: center;
+}
+
+.protect-icon {
+  width: 56rpx;
+  height: 56rpx;
+  margin-right: 16rpx;
+  border-radius: 18rpx;
+  background: #FFF0C7;
+  color: #D98A13;
+  font-size: 21rpx;
+  font-weight: 700;
+  line-height: 56rpx;
+  text-align: center;
+}
+
+.protect-title {
+  display: block;
+  color: #9B6518;
+  font-size: 27rpx;
+  font-weight: 650;
+}
+
+.protect-subtitle {
+  display: block;
+  margin-top: 5rpx;
+  color: #BA8A42;
+  font-size: 21rpx;
+}
+
+.protect-list {
+  margin-top: 22rpx;
+}
+
+.protect-required { display:block; margin-bottom:14rpx; color:#8F5A15; font-size:23rpx; font-weight:600; line-height:1.6; }
+
+.protect-item {
+  display: flex;
+  align-items: flex-start;
+  margin-top: 10rpx;
+  color: #7D6847;
+  font-size: 23rpx;
+  line-height: 1.55;
+}
+
+.protect-dot {
+  width: 8rpx;
+  height: 8rpx;
+  margin: 14rpx 14rpx 0 2rpx;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #E8A83D;
+}
+
+.detail-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18rpx;
+  padding: 30rpx 24rpx 18rpx;
+  color: #939BA7;
+  font-size: 23rpx;
+}
+
+.secondary-divider {
+  color: #CED3DA;
+}
+
+/* 固定底部操作 */
+.detail-bottom-bar {
+  position: fixed;
+  z-index: 100;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  padding: 16rpx 22rpx calc(16rpx + env(safe-area-inset-bottom));
+  border-top: 1rpx solid rgba(222, 226, 232, .9);
+  background: rgba(255, 255, 255, .97);
+  box-shadow: 0 -8rpx 28rpx rgba(29, 42, 58, .08);
+}
+
+.detail-bottom-bar button {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.favorite-action {
+  display: flex;
+  width: 108rpx;
+  height: 78rpx;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  border-radius: 18rpx;
+  background: transparent;
+  color: #727B88;
+  font-size: 20rpx;
+  line-height: 1.15;
+}
+
+.favorite-icon {
+  margin-bottom: 6rpx;
+  color: #636D7A;
+  font-size: 34rpx;
+  line-height: 1;
+}
+
+.favorite-active,
+.favorite-active .favorite-icon {
+  color: #FF5A36;
+}
+
+.primary-action {
+  height: 78rpx;
+  border-radius: 42rpx;
+  font-size: 27rpx;
+  font-weight: 650;
+  line-height: 78rpx;
+}
+
+.chat-action {
+  flex: 1;
+  border: 2rpx solid #BFD9F5;
+  background: #EDF5FF;
+  color: #3478C9;
+}
+
+.buy-action {
+  flex: 1.08;
+  background: linear-gradient(135deg, #FF8A3D, #FF5A36);
+  color: #FFFFFF;
+  box-shadow: 0 8rpx 20rpx rgba(255, 90, 54, .22);
+}
+
+.owner-edit-action,
+.owner-unlist-action,
+.owner-sold-action,
+.owner-relist-action {
+  flex: 1;
+}
+
+.owner-edit-action {
+  border: 2rpx solid #BFD9F5;
+  background: #EDF5FF;
+  color: #3478C9;
+}
+
+.owner-unlist-action {
+  background: #FFEEE9;
+  color: #D85638;
+}
+
+.owner-sold-action { background:#EAF7F0; color:#27865A; }
+.owner-relist-action { background:#EAF3FC; color:#3478C9; }
+
+.owner-unlist-action[disabled] {
+  background: #ECEFF2;
+  color: #9AA2AE;
+}
+
+/* 举报弹窗 */
+.report-modal {
+  position: fixed;
+  z-index: 999;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32rpx;
+  background: rgba(15, 23, 35, .55);
+}
+
+.report-content {
+  width: 100%;
+  max-width: 620rpx;
+  padding: 36rpx;
+  box-sizing: border-box;
+  border-radius: 28rpx;
+  background: #FFFFFF;
+}
+
+.report-title {
+  display: block;
+  color: #202938;
+  font-size: 32rpx;
+  font-weight: 650;
+  text-align: center;
+}
+
+.report-tip {
+  display: block;
+  margin: 10rpx 0 24rpx;
+  color: #9AA2AE;
+  font-size: 22rpx;
+  text-align: center;
+}
+
+.report-picker,
+.report-input {
+  box-sizing: border-box;
+  border: 1rpx solid #E6EAF0;
+  border-radius: 14rpx;
+  background: #F7F8FA;
+  color: #303A49;
+  font-size: 25rpx;
+}
+
+.report-picker {
+  margin-bottom: 18rpx;
+  padding: 20rpx;
+  text-align: center;
+}
+
+.report-input {
+  width: 100%;
+  height: 150rpx;
+  margin-bottom: 22rpx;
+  padding: 18rpx;
+}
+
+.report-btns {
+  display: flex;
+  gap: 14rpx;
+}
+
+.report-cancel,
+.report-submit {
+  flex: 1;
+  height: 76rpx;
+  margin: 0;
+  padding: 0;
+  border-radius: 40rpx;
+  font-size: 26rpx;
+  line-height: 76rpx;
+}
+
+.report-cancel {
+  background: #F1F3F6;
+  color: #667080;
+}
+
+.report-submit {
+  background: #FF5A4E;
+  color: #FFFFFF;
+}

@@ -1,0 +1,55 @@
+<!-- 搜索框 -->
+<view class="search-result-bar">
+  <view class="search-result-input-row">
+    <text class="search-back" bindtap="onBack">←</text>
+    <input class="search-result-input" value="{{keyword}}" 
+           bindinput="onInput" bindconfirm="onSearch"
+           confirm-type="search" 
+           placeholder="搜索接机、搬家、二手..."
+           focus="{{true}}" />
+    <text class="search-clear-inline" wx:if="{{keyword}}" bindtap="onClear">✕</text>
+  </view>
+</view>
+
+<!-- 搜索结果 -->
+<view class="search-result-list" wx:if="{{results.length > 0}}">
+  <text class="result-count">找到 {{results.length}} 条相关结果</text>
+  <view class="result-item card" wx:for="{{results}}" wx:key="itemKey" bindtap="onItemTap" data-item="{{item}}">
+    <view class="flex-row">
+      <view class="result-img" wx:if="{{item.images && item.images.length > 0}}">
+        <image src="{{item.images[0]}}" mode="aspectFill" lazy-load fade-show></image>
+      </view>
+      <view class="result-info flex-column">
+        <text class="result-title text-ellipsis-2">{{item.title}}</text>
+        <view class="flex-between" style="margin-top: 6rpx;">
+          <text class="text-price" wx:if="{{item.price > 0}}">NZ$ {{item.priceText || item.price}}</text>
+          <text class="text-price" wx:else>免费</text>
+          <text class="result-relevance">相关度: {{item.score}}%</text>
+        </view>
+        <text class="text-muted" style="margin-top:4rpx;">{{item.time}}</text>
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- 无结果 / 猜你想搜 -->
+<view class="search-empty" wx:else>
+  <text>🔍</text>
+  <text wx:if="{{keyword}}">没找到 "{{keyword}}" 相关内容</text>
+  <text wx:else>请输入关键词开始搜索</text>
+  <text class="search-empty-hint" wx:if="{{keyword}}">{{errorText || '试试下面这些搜索词'}}</text>
+</view>
+
+<!-- 猜你想搜：结果<3条或无结果时展示 -->
+<view class="recommend-section" wx:if="{{showRecommend && keyword}}">
+  <view class="recommend-header">
+    <text class="recommend-icon">💡</text>
+    <text class="recommend-title">猜你想搜</text>
+  </view>
+  <view class="recommend-tags">
+    <view class="recommend-tag" wx:for="{{recommendKeywords}}" wx:key="*this" 
+          bindtap="onTapRecommend" data-keyword="{{item}}">
+      {{item}}
+    </view>
+  </view>
+</view>

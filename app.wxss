@@ -9,16 +9,22 @@ page {
 /* 公共卡片 */
 .card {
   background-color: #FFFFFF;
-  border-radius: 12rpx;
+  border-radius: 16rpx;
   padding: 24rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.06);
 }
 
 /* 价格高亮 */
 .text-price {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   color: #FF6B35;
   font-weight: 600;
   font-size: 32rpx;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 辅助文字 */

@@ -1,13 +1,62 @@
+<view class="safety-announcement" bindtap="onOpenSafety">
+  <text class="safety-announcement-icon">!</text>
+  <text>禁止违法交易｜平台不代收款｜谨防诈骗</text>
+  <text class="safety-announcement-arrow">›</text>
+</view>
+
 <!-- 搜索框 -->
-<view class="search-bar">
-  <text class="search-icon">🔍</text>
-  <input class="search-input" 
-         placeholder="搜索接机、搬家、二手..." 
-         value="{{searchKeyword}}" 
-         bindinput="onSearchInput"
-         confirm-type="search" />
-  <view class="search-clear" wx:if="{{searchKeyword}}" bindtap="onClearSearch">
-    <text>✕</text>
+<view class="search-area">
+  <view class="search-bar {{showSearchPanel ? 'search-bar-active' : ''}}">
+    <text class="search-icon">🔍</text>
+    <input class="search-input"
+           placeholder="搜索商品、服务或发布者"
+           placeholder-class="search-placeholder"
+           value="{{searchKeyword}}"
+           maxlength="30"
+           cursor-spacing="20"
+           bindinput="onSearchInput"
+           bindfocus="onSearchFocus"
+           bindconfirm="onSearchConfirm"
+           confirm-type="search" />
+    <view class="search-clear" wx:if="{{searchKeyword}}" catchtap="onClearSearch">
+      <text>✕</text>
+    </view>
+  </view>
+  <text class="search-cancel" wx:if="{{showSearchPanel}}" catchtap="onCancelSearch">取消</text>
+</view>
+
+<!-- 搜索联想 / 热门搜索 -->
+<view class="search-panel" wx:if="{{showSearchPanel}}">
+  <view class="search-panel-mask" catchtap="onCloseSearchPanel"></view>
+  <view class="search-panel-content">
+    <!-- 输入时：智能联想 -->
+    <block wx:if="{{searchKeyword}}">
+      <view class="panel-heading">
+        <text class="panel-title">🔍 搜索建议</text>
+        <text class="panel-count">首页匹配 {{displayList.length}} 条</text>
+      </view>
+      <view class="suggest-list">
+        <view class="suggest-item" wx:for="{{suggestions}}" wx:key="*this" bindtap="onTapSuggestion" data-keyword="{{item}}">
+          <text class="suggest-icon">🔍</text>
+          <text>{{item}}</text>
+        </view>
+      </view>
+      <view class="suggest-empty" wx:if="{{suggestions.length === 0}}">
+        <text>未找到匹配结果，试试其他关键词</text>
+      </view>
+    </block>
+    <!-- 空时：热门搜索 -->
+    <block wx:else>
+      <view class="panel-title">🔥 热门搜索</view>
+      <view class="hot-tags">
+        <text class="hot-tag" wx:for="{{hotKeywords}}" wx:key="*this" bindtap="onTapSuggestion" data-keyword="{{item}}">{{item}}</text>
+      </view>
+      <view class="panel-title" style="margin-top:24rpx;" wx:if="{{searchHistory.length > 0}}">🕐 搜索历史</view>
+      <view class="history-list" wx:if="{{searchHistory.length > 0}}">
+        <text class="history-item" wx:for="{{searchHistory}}" wx:key="*this" bindtap="onTapSuggestion" data-keyword="{{item}}">{{item}}</text>
+        <text class="history-clear" catchtap="onClearHistory">清除历史</text>
+      </view>
+    </block>
   </view>
 </view>
 
@@ -16,7 +65,7 @@
   <view class="kingkong-row">
     <view class="kingkong-item" wx:for="{{kingkongRow1}}" wx:key="id" bindtap="onKingkongTap" data-type="{{item.type}}">
       <view class="kingkong-icon" style="background: {{item.bgColor}};">
-        <text>{{item.icon}}</text>
+        <image class="kingkong-icon-image" src="{{item.iconPath}}" mode="aspectFit"></image>
       </view>
       <text class="kingkong-text">{{item.name}}</text>
     </view>
@@ -24,47 +73,61 @@
   <view class="kingkong-row">
     <view class="kingkong-item" wx:for="{{kingkongRow2}}" wx:key="id" bindtap="onKingkongTap" data-type="{{item.type}}">
       <view class="kingkong-icon" style="background: {{item.bgColor}};">
-        <text>{{item.icon}}</text>
+        <image class="kingkong-icon-image" src="{{item.iconPath}}" mode="aspectFit"></image>
       </view>
       <text class="kingkong-text">{{item.name}}</text>
     </view>
   </view>
 </view>
 
-<!-- 热门服务 -->
-<view class="section-header flex-between">
-  <text class="section-title">热门服务</text>
-  <text class="section-more text-muted">更多 →</text>
+<!-- 为你推荐 -->
+<view class="section-header flex-between" wx:if="{{recommendList.length > 0}}">
+  <text class="section-title">💡 为你推荐</text>
+  <text class="section-more text-muted" bindtap="onRefreshRecommend">换一批</text>
 </view>
-<scroll-view class="hot-service-scroll" scroll-x>
-  <view class="hot-service-card" wx:for="{{hotServices}}" wx:key="id">
+<scroll-view class="recommend-scroll" scroll-x wx:if="{{recommendList.length > 0}}">
+  <view class="recommend-card" wx:for="{{recommendList}}" wx:key="itemKey" bindtap="onInfoTap" data-item="{{item}}">
+    <view class="recommend-img" wx:if="{{item.images && item.images.length > 0}}">
+      <image src="{{item.images[0]}}" mode="aspectFill" lazy-load fade-show></image>
+    </view>
+    <text class="recommend-title text-ellipsis">{{item.title}}</text>
+    <text class="text-price" wx:if="{{item.price > 0}}">NZ$ {{item.priceText || item.price}}</text>
+    <text class="text-price" wx:else>免费</text>
+  </view>
+</scroll-view>
+
+<!-- 热门服务 -->
+<view class="section-header">
+  <text class="section-title">热门服务</text>
+</view>
+<view class="hot-service-grid">
+  <view class="hot-service-card" wx:for="{{hotServices}}" wx:key="id" bindtap="onHotServiceTap" data-type="{{item.type}}">
     <view class="hot-service-img" style="background: {{item.bgColor}};">
       <text>{{item.icon}}</text>
     </view>
     <text class="hot-service-title">{{item.title}}</text>
     <text class="text-muted">{{item.desc}}</text>
   </view>
-</scroll-view>
+</view>
 
 <!-- 最新信息 -->
 <view class="section-header">
   <text class="section-title">最新信息</text>
 </view>
 <view class="info-list">
-  <view class="info-item card" wx:for="{{displayList}}" wx:key="id" bindtap="onInfoTap" data-id="{{item.id}}">
+  <view class="info-item card" wx:for="{{displayList}}" wx:key="itemKey" bindtap="onInfoTap" data-item="{{item}}">
     <view class="flex-row">
-      <view class="info-img" style="background: {{item.bgColor}};">
-        <text>{{item.icon}}</text>
+      <view class="info-img" wx:if="{{item.images && item.images.length > 0}}">
+        <image src="{{item.images[0]}}" mode="aspectFill" lazy-load fade-show></image>
       </view>
       <view class="info-content flex-column">
         <text class="info-title text-ellipsis-2">{{item.title}}</text>
         <view class="flex-between info-meta">
-          <text class="text-price" wx:if="{{item.price > 0}}">NZ$ {{item.price}}</text>
+          <text class="text-price" wx:if="{{item.price > 0}}">NZ$ {{item.priceText || item.price}}</text>
           <text class="text-price" wx:else>免费</text>
           <text class="text-muted">{{item.time}}</text>
         </view>
         <view class="flex-row info-footer">
-          <text class="info-tag">{{item.category}}</text>
           <text class="text-muted">{{item.nickname}}</text>
         </view>
       </view>
@@ -72,11 +135,7 @@
   </view>
 </view>
 
-<!-- 搜索无结果提示 -->
 <view class="search-empty" wx:if="{{searchEmpty}}">
   <text>🔍</text>
   <text>没有找到相关内容</text>
 </view>
-
-<!-- 底部提示 -->
-<view class="load-more text-muted" wx:if="{{displayList.length > 0}}">— 上拉加载更多 —</view>

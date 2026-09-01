@@ -1,0 +1,60 @@
+<view class="chat-page" style="padding-bottom: {{keyboardHeight}}px;" wx:if="{{conversation}}">
+  <view class="chat-product">
+    <view class="product-thumb">
+      <image wx:if="{{conversation.itemThumb}}" src="{{conversation.itemThumb}}" mode="aspectFill"></image>
+      <text wx:else>{{conversation.itemIcon}}</text>
+    </view>
+    <view class="product-info">
+      <text class="product-title">{{conversation.itemTitle}}</text>
+      <text class="product-price" wx:if="{{conversation.itemPrice > 0}}">NZ$ {{conversation.itemPriceText || conversation.itemPrice}}</text>
+      <text class="product-price" wx:else>免费</text>
+    </view>
+    <text class="seller-name">{{peerLabel}}：{{peerName}}</text>
+  </view>
+
+  <scroll-view class="chat-messages" scroll-y scroll-into-view="{{toView}}" scroll-with-animation>
+    <view
+      id="message-{{item.id}}"
+      class="message-row {{item.mine ? 'mine' : 'theirs'}}"
+      wx:for="{{messages}}"
+      wx:key="id"
+    >
+      <view class="chat-avatar">
+        <image wx:if="{{item.avatar}}" src="{{item.avatar}}" mode="aspectFill"></image>
+        <text wx:else>{{item.fallback}}</text>
+      </view>
+      <view class="bubble-wrap">
+        <view class="message-bubble">{{item.text}}</view>
+        <text class="message-time">{{item.timeText}}</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <scroll-view class="quick-scroll" scroll-x enable-flex>
+    <text
+      class="quick-chip"
+      wx:for="{{quickMessages}}"
+      wx:key="*this"
+      data-text="{{item}}"
+      bindtap="onQuickSend"
+    >{{item}}</text>
+  </scroll-view>
+
+  <view class="chat-composer">
+    <input
+      class="chat-input"
+      placeholder="输入消息…"
+      value="{{inputValue}}"
+      maxlength="300"
+      confirm-type="send"
+      adjust-position="{{false}}"
+      cursor-spacing="12"
+      bindinput="onInput"
+      bindconfirm="onSend"
+      bindkeyboardheightchange="onKeyboardHeightChange"
+      bindblur="onInputBlur"
+    />
+    <button class="send-btn" bindtap="onSend" disabled="{{!inputValue || sending}}">{{sending ? '发送中' : '发送'}}</button>
+  </view>
+</view>
+<view class="chat-loading" wx:if="{{loading && !conversation}}">正在读取会话…</view>
