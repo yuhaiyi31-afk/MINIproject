@@ -166,7 +166,7 @@ function createTradeHandler({ store, authenticate, environmentId, wechatAppId, a
     'chat.get': async (tx, principal, input) => {
       const { openId } = await account(tx, principal);
       const { conversation, role } = await participant(tx, id(input.conversationId), openId);
-      return { ...chatSummary(conversation, role), messages: array(conversation.messages).slice(-200).map(messageView) };
+      return { ...chatSummary(conversation, role), ...messagePage(conversation, openId, input) };
     },
 
     'chat.markRead': async (tx, principal, input) => {
@@ -174,7 +174,11 @@ function createTradeHandler({ store, authenticate, environmentId, wechatAppId, a
       const conversationId = id(input.conversationId);
       const { conversation, role } = await participant(tx, conversationId, openId);
       const field = role === 'buyer' ? 'unreadForBuyer' : 'unreadForSeller';
-      if (Number(conversation[field]) > 0) await tx.update(collections.conversations, conversationId, { [field]: 0 });
+      const unread = Number(conversation[field]) || 0;
+      if (input.throughMessageId !== undefined && array(conversation.messages).at(-1)?.id !== input.throughMessageId) {
+        return { id: conversationId, unread };
+      }
+      if (unread > 0) await tx.update(collections.conversations, conversationId, { [field]: 0 });
       return { id: conversationId, unread: 0 };
     },
 
@@ -194,12 +198,12 @@ function createTradeHandler({ store, authenticate, environmentId, wechatAppId, a
       const previous = messages.find(message => message.id === messageId);
       if (previous) {
         check(previous.senderOpenId === openId && previous.text === content, 'MESSAGE_CONFLICT', '同一发送编号已有不同消息');
-        return messageView(previous);
+        return messageView({ ...previous, requestId }, openId);
       }
       check(messages.length < 500, 'CHAT_LIMIT', '此测试会话已达到发送上限');
-      const message = { id: messageId, senderOpenId: openId, senderRole: role, sender: role, text: content, kind: 'text', createdAt: now() };
+      const message = { id: messageId, requestId, senderOpenId: openId, senderRole: role, sender: role, text: content, kind: 'text', createdAt: now() };
       await tx.appendMessage(conversationId, message, role === 'buyer' ? 'unreadForSeller' : 'unreadForBuyer');
-      return messageView(message);
+      return messageView(message, openId);
     },
 
     'notifications.markRead': async (tx, principal, input) => {
@@ -220,14 +224,19 @@ function createTradeHandler({ store, authenticate, environmentId, wechatAppId, a
     return { openId, result };
   }
 
-  async function listChats(principal) {
-    const { openId, result: conversations } = await scopedQuery(principal, id => store.conversationsFor(id));
-    const summaries = new Map();
-    for (const conversation of conversations) {
-      const role = roleFor(conversation, openId);
-      if (role) summaries.set(conversation._id, chatSummary(conversation, role));
-    }
-    return { conversations: [...summaries.values()].sort((left, right) => right.updatedAt - left.updatedAt).slice(0, 25) };
+  async function listChats(principal, input) {
+    const limit = input.limit ?? 25;
+    check(Number.isInteger(limit) && limit >= 1 && limit <= 30, 'CHAT_PAGE', '会话分页参数无效');
+    const before = chatCursor(input.cursor);
+    const { openId, result } = await scopedQuery(principal, id => store.conversationsFor(id, limit + 1, before));
+    const conversations = result.slice(0, limit)
+      .map(row => ({ row, role: roleFor(row, openId) }))
+      .filter(entry => entry.role)
+      .map(({ row, role }) => chatSummary(row, role));
+    if (input.limit === undefined && input.cursor === undefined) return { conversations };
+    const last = conversations.at(-1);
+    const hasMore = result.length > limit && !!last;
+    return { conversations, page: { hasMore, nextCursor: hasMore ? `${last.updatedAt}:${last.id}` : '' } };
   }
 
   async function listNotifications(principal) {
@@ -363,16 +372,58 @@ function chatSummary(conversation, role) {
     id: conversation._id,
     itemId: conversation.itemId,
     title: label(conversation.itemTitle, 80),
+    itemPrice: Number(conversation.itemPrice) || 0,
+    otherName: label(role === 'buyer' ? conversation.sellerName : conversation.buyerName, 40),
+    lastMessage: label(conversation.lastMessage, 300),
     currentUserRole: role,
     updatedAt: Number(conversation.updatedAtMs) || 0,
     unread: Number(role === 'buyer' ? conversation.unreadForBuyer : conversation.unreadForSeller) || 0
   };
 }
 
-function messageView(message) {
+function chatCursor(value) {
+  if (value === undefined || value === '') return null;
+  const match = typeof value === 'string' && /^(\d{1,16}):([A-Za-z0-9_-]{1,128})$/.exec(value);
+  check(match && Number.isSafeInteger(Number(match[1])), 'CHAT_PAGE', '会话分页参数无效');
+  return { time: Number(match[1]), id: match[2] };
+}
+
+function messagePage(conversation, openId, input) {
+  const rows = array(conversation.messages);
+  const limit = input.limit ?? 200;
+  const direction = input.direction ?? 'LATEST';
+  check(Number.isInteger(limit) && limit >= 1 && limit <= 200 && ['LATEST', 'OLDER', 'NEWER'].includes(direction),
+    'CHAT_PAGE', '消息分页参数无效');
+  let start = Math.max(0, rows.length - limit);
+  let end = rows.length;
+  if (direction !== 'LATEST') {
+    const cursor = id(input.cursor);
+    const index = rows.findIndex(row => row.id === cursor);
+    check(index >= 0, 'CHAT_PAGE', '消息位置已变化，请刷新会话');
+    if (direction === 'OLDER') {
+      end = index;
+      start = Math.max(0, end - limit);
+    } else {
+      start = index + 1;
+      end = Math.min(rows.length, start + limit);
+    }
+  }
+  const messages = rows.slice(start, end).map(row => messageView(row, openId));
+  return { messages, page: {
+    oldestCursor: messages[0]?.id || '',
+    newestCursor: messages.at(-1)?.id || '',
+    hasMore: direction === 'NEWER' ? end < rows.length : start > 0
+  } };
+}
+
+function messageView(message, openId) {
+  const mine = message.senderOpenId === openId;
   return {
     id: label(message.id, 100),
     senderRole: message.senderRole === 'seller' || message.sender === 'seller' ? 'seller' : 'buyer',
+    mine,
+    clientMessageId: mine ? label(message.requestId, 128) : '',
+    kind: ['system', 'welcome'].includes(String(message.kind || '').toLowerCase()) ? 'SYSTEM' : 'TEXT',
     text: label(message.text, 300),
     createdAt: Number(message.createdAt) || 0
   };

@@ -244,3 +244,39 @@ test('notifications are visible and markable by the recipient only', async () =>
   await data(app, 'notifications.markRead', { notificationId: notice.id });
   assert.equal((await data(seller, 'notifications.list')).notifications[0].read, true);
 });
+
+test('chat pages preserve legacy history and mark only the observed tail as read', async () => {
+  const f = fixture();
+  const seller = f.handler('wx', SELLER);
+  const buyer = f.handler('wx', BUYER);
+  const first = await data(seller, 'chat.send', { conversationId: CHAT, requestId: 'first-new-message', text: 'First update' });
+  const second = await data(seller, 'chat.send', { conversationId: CHAT, requestId: 'second-new-message', text: 'Second update' });
+  const latest = await data(buyer, 'chat.get', { conversationId: CHAT, direction: 'LATEST', limit: 1 });
+  assert.deepEqual(latest.messages.map(row => row.id), [second.id]);
+  assert.equal(latest.messages[0].mine, false);
+  assert.equal(latest.messages[0].clientMessageId, '');
+  assert.equal(latest.page.hasMore, true);
+  const earlier = await data(buyer, 'chat.get', { conversationId: CHAT, direction: 'OLDER', cursor: latest.page.oldestCursor, limit: 2 });
+  assert.deepEqual(earlier.messages.map(row => row.id), ['legacy-msg-1', first.id]);
+  assert.equal(earlier.page.hasMore, false);
+  const catchup = await data(seller, 'chat.get', { conversationId: CHAT, direction: 'NEWER', cursor: 'legacy-msg-1', limit: 1 });
+  assert.equal(catchup.messages[0].clientMessageId, 'first-new-message');
+  assert.equal(catchup.messages[0].mine, true);
+  assert.equal(catchup.page.hasMore, true);
+  assert.equal((await data(buyer, 'chat.markRead', { conversationId: CHAT, throughMessageId: first.id })).unread, 2);
+  assert.equal((await data(buyer, 'chat.markRead', { conversationId: CHAT, throughMessageId: second.id })).unread, 0);
+});
+
+test('the inbox uses a stable cursor across conversations with the same update time', async () => {
+  const f = fixture();
+  const seller = f.handler('wx', SELLER);
+  const buyer = f.handler('wx', BUYER);
+  const extra = await data(buyer, 'chat.ensure', { itemId: 'fixture-second-item' });
+  const firstPage = await data(seller, 'chat.list', { limit: 1 });
+  const secondPage = await data(seller, 'chat.list', { limit: 1, cursor: firstPage.page.nextCursor });
+  assert.deepEqual(new Set([firstPage.conversations[0].id, secondPage.conversations[0].id]), new Set([CHAT, extra.id]));
+  assert.equal(firstPage.page.hasMore, true);
+  assert.equal(secondPage.page.hasMore, false);
+  const stranger = f.handler('wx', OTHER);
+  assert.deepEqual((await data(stranger, 'chat.list', { limit: 1, cursor: firstPage.page.nextCursor })).conversations, []);
+});

@@ -91,9 +91,16 @@ function storeFor(db) {
         })
       });
     }),
-    async conversationsFor(openId) {
-      const queries = ['buyerOpenId', 'sellerOpenId'].map(field => query(collections.conversations, { [field]: openId }, 'updatedAtMs', 25));
-      return (await Promise.all(queries)).flat();
+    async conversationsFor(openId, limit, before) {
+      const { command } = db;
+      const bounds = [command.or({ buyerOpenId: openId }, { sellerOpenId: openId })];
+      if (before) bounds.push(command.or(
+        { updatedAtMs: command.lt(before.time) }, { updatedAtMs: before.time, _id: command.lt(before.id) }
+      ));
+      const { data } = ensureResponse(await db.collection(collections.conversations)
+        .where(command.and(...bounds)).orderBy('updatedAtMs', 'desc').orderBy('_id', 'desc').limit(limit).get());
+      if (!Array.isArray(data)) throw new TypeError('Invalid conversation query response');
+      return data;
     },
     async findConversationId(itemId, buyerOpenId, sellerOpenId) {
       const rows = await query(collections.conversations, { itemId, buyerOpenId, sellerOpenId }, '', 2);

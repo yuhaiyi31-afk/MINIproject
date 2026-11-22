@@ -15,8 +15,8 @@
 | `items.publish`、`items.edit` | 发布或编辑 `market_items`。接受 `title`、`description`、`price`、`category`、`condition`、`region`、`deliveryMethod`。发布还需 `requestId`、`promiseReal` 和 `photoAssetIds`。编辑提交 `itemId`、`revision` 和 `requestId`，省略 `photoAssetIds` 时保留原图。 |
 | `items.transition`、`items.markSold` | 卖家下架、重新上架、售出或软删除同一条记录。状态变更使用 `itemId` 和商品版本，售出快捷操作可用 `items.markSold`。 |
 | `favorites.get`、`favorites.set`、`favorites.list` | 读取或设置收藏，按页查询当前用户收藏的在售商品。 |
-| `chat.list`、`chat.ensure`、`chat.get` | 查询自己的会话，按商品打开买卖会话，或读取其中最近 200 条消息。 |
-| `chat.send`、`chat.markRead` | 发送或标记会话已读。发送重试沿用同一个 `requestId`。 |
+| `chat.list`、`chat.ensure`、`chat.get` | 按页查看自己的会话，按商品打开会话，从当前页读取更早或更新的消息。 |
+| `chat.send`、`chat.markRead` | 发送消息或标记已读。发送重试沿用同一个 `requestId`。提交已看到的最后一条消息编号，可保留之后到达的未读消息。 |
 | `notifications.list`、`notifications.markRead` | 读取和标记现有收件人通知。 |
 
 两个配对步骤生成独立随机码，有效期五分钟。服务端仅保存码的摘要。若 App 已经领取确认码但网络中断丢失了响应，请在微信端生成新的配对码。绑定索引的双向记录在同一事务内增删。平台用户 ID 基于环境、小程序 AppID 和原有微信身份生成，同一微信身份在该环境内解绑再绑定仍得到相同 ID。旧商品归属、收藏和聊天继续通过原微信身份识别。

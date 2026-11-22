@@ -53,6 +53,15 @@ function fixture({ failAdd, onUpload } = {}) {
   let ready = Promise.resolve();
   let clock = seedTime;
   const copy = value => structuredClone(value);
+  function matches(row, filters) {
+    if (filters.operation === 'or') return filters.values.some(entry => matches(row, entry));
+    if (filters.operation === 'and') return filters.values.every(entry => matches(row, entry));
+    return Object.entries(filters).every(([key, value]) => {
+      if (value?.operation === 'in') return value.value.includes(row[key]);
+      if (value?.operation === 'lt') return row[key] < value.value;
+      return row[key] === value;
+    });
+  }
   const objects = new Map();
   const uploadFile = async (path, bytes) => {
     await onUpload?.(path, bytes);
@@ -95,8 +104,7 @@ function fixture({ failAdd, onUpload } = {}) {
           skip(value) { offset = value; return query; },
           limit(value) { count = value; return query; },
           async get() {
-            const matched = [...docs.values()].filter(row => Object.entries(filters)
-              .every(([key, value]) => value?.operation === 'in' ? value.value.includes(row[key]) : row[key] === value));
+            const matched = [...docs.values()].filter(row => matches(row, filters));
             matched.sort((left, right) => {
               for (const [key, sign] of order) {
                 if (left[key] < right[key]) return -sign;
@@ -115,7 +123,10 @@ function fixture({ failAdd, onUpload } = {}) {
   const store = storeFor({
     command: {
       push: value => ({ operation: 'push', value }), inc: value => ({ operation: 'inc', value }),
-      in: value => ({ operation: 'in', value })
+      in: value => ({ operation: 'in', value }),
+      lt: value => ({ operation: 'lt', value }),
+      or: (...values) => ({ operation: 'or', values }),
+      and: (...values) => ({ operation: 'and', values })
     },
     collection: name => collection(rows, name),
     runTransaction(callback) {
