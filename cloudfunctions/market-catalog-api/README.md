@@ -7,7 +7,7 @@
 | `items.browse` | 可选 `keyword`、`category`、`region`、`minPrice`、`maxPrice`、`days`、`sort`、`cursor`、`limit` | `items` 与 `page`。只列 `active` 商品。最大每页 30 条。 |
 | `items.get` | `itemId`，即原商品 `_id` | 在售商品详情；已售时只返回 ID、币种和 `SOLD` 状态。 |
 
-微信端可在测试环境通过 `wx.cloud.callFunction` 调用 `market-catalog-api`。原生 App 使用环境自己的 CloudBase HTTPS 云函数入口。排序从 `LATEST`、`PRICE_ASC`、`PRICE_DESC` 选择。App 的“附近”沿用指定的大概区域并按最新排序，无需定位。每次刷新使用新游标；短时间翻页保持同一排序和筛选。价格变化后使用刷新重新取排序一致的列表。
+微信端用 [独立联调入口](../../tools/catalog-preview/README.md) 在测试环境通过 `wx.cloud.callFunction` 调用 `market-catalog-api`。原生 App 使用环境自己的 CloudBase HTTPS 云函数入口。排序从 `LATEST`、`PRICE_ASC`、`PRICE_DESC` 选择。App 的“附近”沿用指定的大概区域并按最新排序，无需定位。每次刷新使用新游标；短时间翻页保持同一排序和筛选。价格变化后使用刷新重新取排序一致的列表。
 
 响应由显式字段选择生成，不查询账号、收藏或聊天集合。精确位置、联系方式、内部身份、视频和卖家资料不属于目录响应。自由文本的联系方式检查和媒体路径检查是预览保护，公开网页和搜索索引在将来仍需独立审核、同意和图片处理。未设置媒体桶时不返回图片；有媒体桶时只签发该测试环境 `market/images` 和 `market/thumbnails` 的短期链接。
 
