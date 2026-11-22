@@ -1,0 +1,9 @@
+{
+  "name": "market-trade-preview",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "engines": { "node": ">=20" },
+  "scripts": { "test": "node --test test/*.test.js" },
+  "dependencies": { "@cloudbase/node-sdk": "3.17.2" }
+}

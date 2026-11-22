@@ -1,0 +1,49 @@
+<view class="page">
+  <block wx:if="{{ready}}">
+    <view class="panel">
+      <view class="heading">测试微信账号</view>
+      <view>{{linked ? '已绑定 App 账号' : '尚未绑定 App 账号'}}</view>
+      <button wx:if="{{linked}}" data-mode="unlink" disabled="{{busy}}" bindtap="start">生成解绑配对码</button>
+      <button wx:else data-mode="link" disabled="{{busy}}" bindtap="start">生成绑定配对码</button>
+      <block wx:if="{{invite}}">
+        <button disabled="{{busy}}" bindtap="copyInvite">复制配对码到 App</button>
+        <input class="input" value="{{confirmation}}" disabled="{{busy}}" maxlength="48" placeholder="粘贴 App 返回的确认码" bindinput="enterConfirmation" />
+        <button disabled="{{busy || !confirmation}}" bindtap="confirm">确认{{mode === 'unlink' ? '解绑' : '绑定'}}</button>
+      </block>
+    </view>
+
+    <view class="panel">
+      <view class="heading">共享商品</view>
+      <input class="input" value="{{itemId}}" disabled="{{busy}}" maxlength="100" placeholder="商品 ID" bindinput="enterItem" />
+      <button disabled="{{busy}}" bindtap="readFavorite">读取收藏状态</button>
+      <button disabled="{{busy}}" data-operation="add" bindtap="setFavorite">收藏</button>
+      <button disabled="{{busy}}" data-operation="remove" bindtap="setFavorite">取消收藏</button>
+      <button disabled="{{busy}}" bindtap="confirmSold">将我的商品标记为已售</button>
+      <button disabled="{{busy}}" bindtap="startChat">就此商品联系卖家</button>
+    </view>
+
+    <view class="panel">
+      <view class="heading">会话</view>
+      <button disabled="{{busy}}" bindtap="loadChats">读取会话</button>
+      <button wx:for="{{conversations}}" wx:key="id" data-id="{{item.id}}" disabled="{{busy}}" bindtap="openChat">{{item.title}}</button>
+      <block wx:if="{{conversationId}}">
+        <view wx:for="{{messages}}" wx:key="id" class="message">
+          <text>{{item.senderRole === 'seller' ? '卖家' : '买家'}} · {{item.text}}</text>
+        </view>
+        <input class="input" value="{{draft}}" disabled="{{busy}}" maxlength="300" placeholder="消息内容" bindinput="enterDraft" />
+        <button disabled="{{busy || !draft}}" bindtap="send">发送消息</button>
+        <button disabled="{{busy}}" bindtap="markRead">将会话标记为已读</button>
+      </block>
+    </view>
+
+    <view class="panel">
+      <view class="heading">通知</view>
+      <button disabled="{{busy}}" bindtap="loadNotifications">读取通知</button>
+      <view wx:for="{{notifications}}" wx:key="id" class="message">
+        <text>{{item.text}}</text>
+        <button wx:if="{{!item.read}}" data-id="{{item.id}}" disabled="{{busy}}" bindtap="markNotification">标记已读</button>
+      </view>
+    </view>
+  </block>
+  <view wx:if="{{notice}}" class="notice">{{notice}}</view>
+</view>

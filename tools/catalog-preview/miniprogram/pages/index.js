@@ -1,4 +1,4 @@
-const { createWechatCatalog } = require('../catalog-client');
+const { createWechatCatalog, testEnvironment } = require('../catalog-client');
 
 Page({
   data: { environmentId: '', itemId: '', items: [], busy: false, loaded: false, error: '', evidence: null, copyable: '' },
@@ -56,5 +56,15 @@ Page({
 
   copyEvidence() {
     if (this.data.copyable) wx.setClipboardData({ data: this.data.copyable });
+  },
+
+  openTrade() {
+    try {
+      const env = testEnvironment(this.data.environmentId);
+      const itemId = this.data.itemId.trim();
+      wx.navigateTo({ url: `/pages/trade?env=${encodeURIComponent(env)}&itemId=${encodeURIComponent(itemId)}` });
+    } catch (error) {
+      this.setData({ error: error.message });
+    }
   }
 });

@@ -1,5 +1,5 @@
 {
-  "pages": ["pages/index"],
+  "pages": ["pages/index", "pages/trade"],
   "window": {
     "navigationBarTitleText": "商品目录联调",
     "navigationBarBackgroundColor": "#4A90D9",
