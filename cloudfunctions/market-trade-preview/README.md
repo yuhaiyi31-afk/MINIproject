@@ -10,8 +10,11 @@
 | --- | --- |
 | `identity.start`、`identity.claim`、`identity.confirm` | 微信生成限时配对码。App 登录后换取确认码。原微信会话提交确认码，完成绑定或解绑。 |
 | `identity.status` | 查询当前账号的绑定状态和统一用户 ID。 |
-| `items.markSold` | 卖家将同一个 `market_items` 记录从在售变成已售。该操作可重试。 |
-| `favorites.get`、`favorites.set` | 读取或设置当前账号对商品的收藏。 |
+| `items.options`、`items.mine`、`items.getOwned` | 读取共用发布选项、我的商品和卖家编辑所需的商品版本。 |
+| `media.upload` | 发送一张压缩后的图片。输入包含 `requestId` 和 `imageBase64`，返回当前卖家的 `assetId`。 |
+| `items.publish`、`items.edit` | 发布或编辑 `market_items`。接受 `title`、`description`、`price`、`category`、`condition`、`region`、`deliveryMethod`。发布还需 `requestId`、`promiseReal` 和 `photoAssetIds`。编辑提交 `itemId`、`revision` 和 `requestId`，省略 `photoAssetIds` 时保留原图。 |
+| `items.transition`、`items.markSold` | 卖家下架、重新上架、售出或软删除同一条记录。状态变更使用 `itemId` 和商品版本，售出快捷操作可用 `items.markSold`。 |
+| `favorites.get`、`favorites.set`、`favorites.list` | 读取或设置收藏，按页查询当前用户收藏的在售商品。 |
 | `chat.list`、`chat.ensure`、`chat.get` | 查询自己的会话，按商品打开买卖会话，或读取其中最近 200 条消息。 |
 | `chat.send`、`chat.markRead` | 发送或标记会话已读。发送重试沿用同一个 `requestId`。 |
 | `notifications.list`、`notifications.markRead` | 读取和标记现有收件人通知。 |
@@ -20,16 +23,24 @@
 
 商品目录响应由公开字段白名单生成。交易函数检查商品所有权、会话参与身份及通知收件人，响应省去联系方式和底层身份字段。平台用户 ID 只出现在已登录账号的绑定结果中。未认证请求、第三人读取聊天、跨账号写入和重复发送均由本地测试覆盖。
 
+## 商品、图片与状态
+
+服务端把 JPEG、PNG 或 WebP 静态图片重新编码为 JPEG，移除 EXIF 等元数据。一次最多传一张 512 KB 压缩图，每件商品可挂 1 至 9 张。图片必须先由当前账号上传并取得有效凭据，再与同一个商品 ID 绑定，上传和发布重试沿用原请求编号。后台每个卖家每十分钟最多取得 24 个新图片凭据，未挂接的凭据有效期为 24 小时。
+
+在售可以下架、售出或删除。下架可以重新上架、售出或删除。已售可以重新上架或删除。已删除和平台暂停的商品由卖家操作时会拒绝。公开目录仅列在售商品，已售详情保留原 ID 和已售状态。
+
+删除会保存商品墓碑和已有聊天，撤下公开照片引用。图片文件保留在私有测试存储，已签发的图片链接按原期限失效，最多五分钟。未发布、替换后或删除后的图片实际清理策略需在正式切换前确认。正式数据保留原商品 ID 和微信归属，现有聊天和通知保留当时的商品快照。
+
 ## 本地验证
 
-使用 Node.js 20 或更新版本，在本目录运行 `npm ci --ignore-scripts` 和 `npm test`。联合跑两个仓库时，在 `SECONDHAND_APP` 运行 `node scripts/verify-catalog-local.cjs <MINIproject 目录>`，需要 Node.js 22.13 或更新版本。联合测试执行两个客户端的请求适配器和后端处理器，使用合成数据和模拟传输。
+使用 Node.js 20.9 或更新版本，在本目录运行 `npm ci --ignore-scripts --include=optional` 和 `npm test`。联合跑两个仓库时，在 `SECONDHAND_APP` 运行 `node scripts/verify-catalog-local.cjs <MINIproject 目录>`，需要 Node.js 22.13 或更新版本。联合测试通过模拟传输执行客户端请求、图片解码编码和后端处理器，使用合成账号、商品和照片。独立函数随包保存现有小程序的内容策略，自动测试核对两份规则一致。
 
 ## 云端验收
 
 1. 选用已获授权的独立环境和测试用微信小程序。将项目 `tools/catalog-preview` 的 AppID 替换成它的测试 AppID。在该环境开启邮箱验证码登录，配置客户端可公开使用的 Publishable Key。
-2. 使用测试数据准备 `market_items`、`user_profiles`、`market_conversations`、`market_notifications`、`market_identity_links`、`market_identity_invites`。这六个集合应仅允许服务端访问。用真实测试账号的身份和合成业务记录进行验收。会话列表依赖买家或卖家字段与 `updatedAtMs` 的排序查询，历史会话查找按 `itemId`、`buyerOpenId`、`sellerOpenId` 查询，通知按 `recipientOpenId` 和 `createdAtMs` 查询。结合测试环境实际查询结果建立需要的索引。
-3. 在该环境部署 `market-catalog-api` 和 `market-trade-preview` 的事件函数。配置 `MARKET_TRADE_PREVIEW_ENV` 和 `MARKET_TRADE_WECHAT_APP_ID`。仅在使用虚构内测档案时设置 `MARKET_TRADE_TEST_PROFILES=true`。交易函数入口要求配置与实际云函数环境一致，并硬性拒绝已知正式环境。交易函数的调用权限仅开放给经过认证的测试客户端。
-4. 在小程序生成配对码，由 App 邮箱登录后领取确认码，再回小程序确认。使用 App 收藏，回小程序读取收藏状态。用无关账号尝试标记已售，确认被拒绝，再由卖家操作，刷新三个客户端并核对原商品 ID 和已售状态。
-5. 测试会话两方读取同一段历史并各发一条消息，以原请求编号重试，核对仅生成一条记录。核对无关账号的会话、通知响应和解绑后的访问被拒绝。测试账号使用完毕后其授权可从测试配置撤销。
+2. 准备 `market_items`、`user_profiles`、`market_conversations`、`market_notifications`、`market_identity_links`、`market_identity_invites`、`market_trade_media`、`market_trade_limits`。数据库集合和图片桶均仅允许服务端直接访问。按现有会话的买家或卖家、`updatedAtMs`，通知的 `recipientOpenId`、`createdAtMs`，及我的商品的 `ownerOpenId`、`publishType`、可选 `status`、`createdAtMs`、`_id` 查询建立需要的索引。历史会话查找按 `itemId`、`buyerOpenId`、`sellerOpenId` 查询。
+3. 在该环境部署两个事件函数。交易函数使用 Node.js 20.9 或更新版本，安装匹配云端体系结构的 Sharp 可选依赖。配置 `MARKET_TRADE_PREVIEW_ENV` 和 `MARKET_TRADE_WECHAT_APP_ID`。两个函数的 `MARKET_CATALOG_PREVIEW_BUCKET` 填同一个测试桶后缀，保持 `cloud://环境ID.桶后缀` 与上传返回值一致。仅合成内测档案使用 `MARKET_TRADE_TEST_PROFILES=true`。建议给图片处理配置 512 MB 和 30 秒，并在测试环境核对真实响应耗时。交易函数仅由经过认证的测试客户端调用。
+4. 在小程序生成配对码，由 App 邮箱登录后换取确认码，再回小程序确认。分别用微信、Android 和 iOS 上传合成照片，各发布一件商品。核对三个客户端的 ID、价格和照片一致。用另一端编辑、换图、下架、重新上架、标为已售和删除。核对超时重试仅有一条商品记录、无关账号无法操作以及删除后原会话仍可访问。
+5. 使用 App 收藏，回小程序查看同一份收藏。测试双方读写原会话，重试发送并核对只有一条新消息。核对无关账号的私信和通知，以及解绑后的 App 写入权限。
 
-联调范围为商品目录、绑定和解绑、标记已售、收藏、聊天和现有通知。照片上传及商品发布、编辑、删除、举报、拉黑、平台管理、通知推送和账号恢复尚待接入共用模式。正式切换需要单独验证。
+正式切换、举报、拉黑管理、账号恢复和通知推送有单独的验收与交付范围。

@@ -1,6 +1,6 @@
 'use strict';
 
-const { collections } = require('./trade');
+const { collections } = require('./shared');
 
 const LIVE_ENVIRONMENT = 'cloud1-d9glh048lb56b8a00';
 const MISSING = new Set(['DOCUMENT_NOT_FOUND', 'DATABASE_DOCUMENT_NOT_FOUND', '-502001']);
@@ -13,7 +13,9 @@ function previewConfig(env) {
   if (!/^[a-z0-9-]{1,64}$/.test(environmentId || '') || environmentId === LIVE_ENVIRONMENT
     || !/^wx[a-f0-9]{16}$/.test(configuredApp || '')
     || !runtimeIds.length || !runtimeIds.every(value => value === environmentId)) return null;
-  return { environmentId, wechatAppId: configuredApp, allowTestProfiles: env.MARKET_TRADE_TEST_PROFILES === 'true' };
+  const bucket = env.MARKET_CATALOG_PREVIEW_BUCKET;
+  const mediaRoot = /^[a-z0-9-]{1,128}$/.test(bucket || '') ? `${environmentId}.${bucket}` : '';
+  return { environmentId, wechatAppId: configuredApp, allowTestProfiles: env.MARKET_TRADE_TEST_PROFILES === 'true', mediaRoot };
 }
 
 async function principalFrom(auth, wechatAppId) {
@@ -98,7 +100,16 @@ function storeFor(db) {
       if (rows.length > 1) throw new Error('Duplicate existing conversations');
       return rows[0]?._id;
     },
-    notificationsFor: openId => query(collections.notifications, { recipientOpenId: openId }, 'createdAtMs', 25)
+    notificationsFor: openId => query(collections.notifications, { recipientOpenId: openId }, 'createdAtMs', 25),
+    activeItemsById: ids => query(collections.items, { _id: db.command.in(ids), publishType: 'market', status: 'active' }, '', 20),
+    async itemsFor(openId, status, offset) {
+      const where = { ownerOpenId: openId, publishType: 'market' };
+      if (status) where.status = status;
+      const { data } = ensureResponse(await db.collection(collections.items)
+        .where(where).orderBy('createdAtMs', 'desc').orderBy('_id', 'desc').skip(offset).limit(21).get());
+      if (!Array.isArray(data)) throw new TypeError('Invalid item query response');
+      return data;
+    }
   };
 }
 

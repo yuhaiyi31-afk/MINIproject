@@ -3,17 +3,23 @@ const { createWechatTrade } = require('../trade-client');
 Page({
   data: {
     ready: false, busy: false, notice: '', linked: false, itemId: '',
-    mode: '', invite: '', confirmation: '', conversations: [], conversationId: '', messages: [], draft: '', notifications: []
+    mode: '', invite: '', confirmation: '', conversations: [], conversationId: '', messages: [], draft: '', notifications: [],
+    favorites: [], favoritesOffset: 0, favoritePagesLeft: false
   },
 
   onLoad(options) {
     try {
+      this.environmentId = options.env;
       this.call = createWechatTrade(wx.cloud, options.env);
       this.setData({ ready: true, itemId: options.itemId || '' });
       this.readStatus();
     } catch (error) {
       this.setData({ notice: error.message });
     }
+  },
+
+  openItems() {
+    wx.navigateTo({ url: `/pages/items?env=${encodeURIComponent(this.environmentId)}` });
   },
 
   async run(operation) {
@@ -78,17 +84,33 @@ Page({
     });
   },
 
+  async readFavorites(offset) {
+    const { items, page } = await this.call('favorites.list', { offset });
+    this.setData({
+      favorites: offset ? [...this.data.favorites, ...items] : items,
+      favoritesOffset: page.nextOffset, favoritePagesLeft: page.hasMore
+    });
+  },
+
+  loadFavorites() { return this.run(() => this.readFavorites(0)); },
+
+  loadMoreFavorites() { return this.run(() => this.readFavorites(this.data.favoritesOffset)); },
+
+  chooseFavorite(event) { this.setData({ itemId: event.currentTarget.dataset.id }); },
+
   confirmSold() {
     const itemId = this.data.itemId.trim();
-    wx.showModal({
-      title: '标记已售',
-      content: '标记后，这件测试商品会从三端的在售列表移除。',
-      success: ({ confirm }) => {
-        if (confirm) this.run(async () => {
-          await this.call('items.markSold', { itemId });
-          this.setData({ notice: '已标记为已售' });
-        });
-      }
+    return this.run(async () => {
+      const item = await this.call('items.getOwned', { itemId });
+      const confirmed = await new Promise(resolve => wx.showModal({
+        title: '标记已售',
+        content: `将「${item.title}」从三端的在售列表移除。`,
+        success: ({ confirm }) => resolve(confirm),
+        fail: () => resolve(false)
+      }));
+      if (!confirmed) return;
+      await this.call('items.markSold', { itemId, revision: item.revision });
+      this.setData({ notice: '已标记为已售' });
     });
   },
 

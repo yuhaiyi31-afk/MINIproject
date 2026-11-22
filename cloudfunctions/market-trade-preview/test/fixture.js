@@ -4,6 +4,7 @@ const { collections, createTradeHandler } = require('../trade');
 const { storeFor } = require('../runtime');
 
 const ENV = 'shared-market-fixture';
+const MEDIA_ROOT = `${ENV}.fixture-bucket`;
 const WX_APP = 'wx0123456789abcdef';
 const SELLER = 'wx-fixture-seller';
 const BUYER = 'wx-fixture-buyer';
@@ -12,7 +13,7 @@ const APP = 'uid-fixture-seller';
 const ITEM = 'fixture-monitor';
 const CHAT = 'fixture-conversation';
 
-function fixture({ failAdd } = {}) {
+function fixture({ failAdd, onUpload } = {}) {
   const seedTime = 1795320000000;
   const profile = _id => ({
     _id, nickName: 'Fixture account', internalTestAccess: true, status: 'active',
@@ -23,6 +24,8 @@ function fixture({ failAdd } = {}) {
     [collections.profiles, new Map([[SELLER, profile(SELLER)], [BUYER, profile(BUYER)], [OTHER, profile(OTHER)]])],
     [collections.links, new Map()],
     [collections.invites, new Map()],
+    [collections.media, new Map()],
+    [collections.limits, new Map()],
     [collections.items, new Map([
       [ITEM, {
         _id: ITEM, ownerOpenId: SELLER, publishType: 'market', status: 'active', title: 'Fixture monitor',
@@ -50,6 +53,13 @@ function fixture({ failAdd } = {}) {
   let ready = Promise.resolve();
   let clock = seedTime;
   const copy = value => structuredClone(value);
+  const objects = new Map();
+  const uploadFile = async (path, bytes) => {
+    await onUpload?.(path, bytes);
+    const fileID = `cloud://${MEDIA_ROOT}/${path}`;
+    objects.set(fileID, Buffer.from(bytes));
+    return { fileID };
+  };
 
   function collection(view, name) {
     const docs = view.get(name);
@@ -77,22 +87,36 @@ function fixture({ failAdd } = {}) {
         return { id: data._id };
       },
       where(filters) {
-        const query = field => ({
-          limit: limit => ({
-            async get() {
-              const matched = [...docs.values()].filter(row => Object.entries(filters).every(([key, value]) => row[key] === value));
-              if (field) matched.sort((a, b) => b[field] - a[field]);
-              return { data: copy(matched.slice(0, limit)) };
-            }
-          })
-        });
-        return { ...query(), orderBy: query };
+        const order = [];
+        let offset = 0;
+        let count = 100;
+        const query = {
+          orderBy(field, direction) { order.push([field, direction === 'desc' ? -1 : 1]); return query; },
+          skip(value) { offset = value; return query; },
+          limit(value) { count = value; return query; },
+          async get() {
+            const matched = [...docs.values()].filter(row => Object.entries(filters)
+              .every(([key, value]) => value?.operation === 'in' ? value.value.includes(row[key]) : row[key] === value));
+            matched.sort((left, right) => {
+              for (const [key, sign] of order) {
+                if (left[key] < right[key]) return -sign;
+                if (left[key] > right[key]) return sign;
+              }
+              return 0;
+            });
+            return { data: copy(matched.slice(offset, offset + count)) };
+          }
+        };
+        return query;
       }
     };
   }
 
   const store = storeFor({
-    command: { push: value => ({ operation: 'push', value }), inc: value => ({ operation: 'inc', value }) },
+    command: {
+      push: value => ({ operation: 'push', value }), inc: value => ({ operation: 'inc', value }),
+      in: value => ({ operation: 'in', value })
+    },
     collection: name => collection(rows, name),
     runTransaction(callback) {
       const operation = ready.then(async () => {
@@ -107,10 +131,10 @@ function fixture({ failAdd } = {}) {
   });
   const handler = (provider, id, options = {}) => createTradeHandler({
     environmentId: ENV, wechatAppId: WX_APP, allowTestProfiles: true, store,
-    now: () => clock, authenticate: () => provider ? { provider, id } : null, ...options
+    mediaRoot: MEDIA_ROOT, uploadFile, now: () => clock, authenticate: () => provider ? { provider, id } : null, ...options
   });
   return {
-    handler, store, rows: name => [...rows.get(name).values()].map(copy),
+    handler, store, objects, rows: name => [...rows.get(name).values()].map(copy),
     advance: milliseconds => { clock += milliseconds; },
     catalogStore: {
       list: async () => [...rows.get(collections.items).values()].filter(item => item.status === 'active' && item.publishType === 'market').map(copy),
@@ -119,4 +143,4 @@ function fixture({ failAdd } = {}) {
   };
 }
 
-module.exports = { fixture, ENV, WX_APP, SELLER, BUYER, OTHER, APP, ITEM, CHAT };
+module.exports = { fixture, ENV, MEDIA_ROOT, WX_APP, SELLER, BUYER, OTHER, APP, ITEM, CHAT };

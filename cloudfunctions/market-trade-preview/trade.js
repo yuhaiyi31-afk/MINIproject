@@ -1,33 +1,11 @@
 'use strict';
 
 const { createHash, randomBytes, timingSafeEqual } = require('node:crypto');
-
-const collections = Object.freeze({
-  links: 'market_identity_links',
-  invites: 'market_identity_invites',
-  profiles: 'user_profiles',
-  items: 'market_items',
-  conversations: 'market_conversations',
-  notifications: 'market_notifications'
-});
+const { collections, ID, TradeError, check, hash, id, itemKey, array, label } = require('./shared');
+const { createItemActions, ownerItem, favoriteItem, OPTIONS } = require('./items');
+const { createMediaUpload, MAX_ENCODED_BYTES } = require('./media');
 const INVITE_MS = 5 * 60 * 1000;
-const ID = /^[A-Za-z0-9_-]{1,128}$/;
 const SECRET = /^[a-f0-9]{48}$/;
-
-class TradeError extends Error {
-  constructor(code, message) {
-    super(message);
-    this.code = code;
-  }
-}
-
-function check(condition, code, message) {
-  if (!condition) throw new TradeError(code, message);
-}
-
-function hash(...parts) {
-  return createHash('sha256').update(JSON.stringify(parts)).digest('hex');
-}
 
 function secret() {
   return randomBytes(24).toString('hex');
@@ -38,34 +16,18 @@ function matchesSecret(value, digest) {
     && timingSafeEqual(Buffer.from(hash(value), 'hex'), Buffer.from(digest, 'hex'));
 }
 
-function id(value) {
-  check(typeof value === 'string' && ID.test(value), 'INVALID_ID', '编号无效');
-  return value;
-}
-
-function itemKey(value) {
-  const itemId = id(value);
-  check(itemId.length <= 100, 'INVALID_ID', '商品编号无效');
-  return itemId;
-}
-
-function array(value) {
-  return Array.isArray(value) ? value : [];
-}
-
-function label(value, length) {
-  return typeof value === 'string' ? value.trim().slice(0, length) : '';
-}
-
 function inputFrom(event) {
   if (typeof event?.body === 'string') {
-    check(event.body.length <= 8192, 'INVALID_REQUEST', '请求过长');
-    try { return JSON.parse(event.body); } catch { throw new TradeError('INVALID_REQUEST', '请求格式无效'); }
+    check(event.body.length <= MAX_ENCODED_BYTES + 8192, 'INVALID_REQUEST', '请求过长');
+    let input;
+    try { input = JSON.parse(event.body); } catch { throw new TradeError('INVALID_REQUEST', '请求格式无效'); }
+    check(event.body.length <= 8192 || input?.action === 'media.upload', 'INVALID_REQUEST', '请求过长');
+    return input;
   }
   return event?.body || event;
 }
 
-function createTradeHandler({ store, authenticate, environmentId, wechatAppId, allowTestProfiles = false, now = Date.now }) {
+function createTradeHandler({ store, authenticate, environmentId, wechatAppId, allowTestProfiles = false, now = Date.now, mediaRoot = '', uploadFile }) {
   const key = (provider, identity) => `${provider}_${hash(environmentId, wechatAppId, provider, identity).slice(0, 40)}`;
 
   async function requireProfile(tx, openId) {
@@ -110,6 +72,8 @@ function createTradeHandler({ store, authenticate, environmentId, wechatAppId, a
   }
 
   const actions = {
+    ...createItemActions({ account, now, mediaRoot }),
+
     'identity.status': async (tx, principal) => {
       const link = await verifiedLink(tx, principal);
       const openId = principal.provider === 'wx' ? principal.id : link?.openId;
@@ -174,22 +138,6 @@ function createTradeHandler({ store, authenticate, environmentId, wechatAppId, a
       }
       await tx.remove(collections.invites, inviteId);
       return identityResult(principal.id, invite.mode === 'link');
-    },
-
-    'items.markSold': async (tx, principal, input) => {
-      const itemId = itemKey(input.itemId);
-      const { openId } = await account(tx, principal);
-      const item = await tx.get(collections.items, itemId);
-      check(item?.publishType === 'market' && item.ownerOpenId === openId, 'ITEM_FORBIDDEN', '无权修改该商品');
-      if (item.status !== 'sold') {
-        check(item.status === 'active', 'ITEM_STATE', '只有在售商品可标记为已售');
-        const timestamp = now();
-        await tx.update(collections.items, itemId, {
-          status: 'sold', soldAtMs: timestamp, updatedAtMs: timestamp, statusChangedAtMs: timestamp,
-          statusChangedBy: 'owner', updatedAt: new Date(timestamp)
-        });
-      }
-      return { id: itemId, status: 'SOLD' };
     },
 
     'favorites.get': async (tx, principal, input) => {
@@ -265,8 +213,8 @@ function createTradeHandler({ store, authenticate, environmentId, wechatAppId, a
   };
 
   async function scopedQuery(principal, query) {
-    const { openId } = await store.transaction(tx => account(tx, principal));
-    const result = await query(openId);
+    const { openId, profile } = await store.transaction(tx => account(tx, principal));
+    const result = await query(openId, profile);
     const current = await store.transaction(tx => account(tx, principal));
     check(current.openId === openId, 'LINK_STATE', '账号绑定已发生变化');
     return { openId, result };
@@ -338,7 +286,46 @@ function createTradeHandler({ store, authenticate, environmentId, wechatAppId, a
     });
   }
 
-  const queryActions = { 'chat.list': listChats, 'chat.ensure': ensureChat, 'notifications.list': listNotifications };
+  async function listOwnedItems(principal, input) {
+    const offset = input.offset ?? 0;
+    const status = input.status || '';
+    const statuses = ['', 'ACTIVE', 'SOLD', 'UNLISTED', 'DELETED', 'SUSPENDED', 'DELETING'];
+    check(Number.isSafeInteger(offset) && offset >= 0 && offset <= 100000 && statuses.includes(status),
+      'ITEM_LIST', '我的商品筛选或页码无效');
+    const { openId, result } = await scopedQuery(principal, id => store.itemsFor(id, status.toLowerCase(), offset));
+    return {
+      items: result.slice(0, 20).filter(item => item.ownerOpenId === openId && item.publishType === 'market').map(ownerItem),
+      page: { hasMore: result.length > 20, nextOffset: offset + 20 }
+    };
+  }
+
+  async function listFavoriteItems(principal, input) {
+    const offset = input.offset ?? 0;
+    check(Number.isSafeInteger(offset) && offset >= 0 && offset <= 100, 'ITEM_LIST', '收藏页码无效');
+    const { result } = await scopedQuery(principal, async (_openId, profile) => {
+      const favorites = [...new Set(array(profile.favoriteItemIds).slice(0, 100))]
+        .filter(value => typeof value === 'string' && value.length <= 100 && ID.test(value));
+      const ids = favorites.slice(offset, offset + 20);
+      const blocked = new Set(array(profile.blockedUserIds));
+      const rows = ids.length ? await store.activeItemsById(ids) : [];
+      const byId = new Map(rows.filter(item => !blocked.has(item.ownerOpenId)).map(item => [item._id, item]));
+      return {
+        items: ids.filter(itemId => byId.has(itemId)).map(itemId => favoriteItem(byId.get(itemId))),
+        page: { hasMore: offset + 20 < favorites.length, nextOffset: offset + 20 }
+      };
+    });
+    return result;
+  }
+
+  const queryActions = {
+    'chat.list': listChats,
+    'chat.ensure': ensureChat,
+    'notifications.list': listNotifications,
+    'items.options': () => OPTIONS,
+    'items.mine': listOwnedItems,
+    'favorites.list': listFavoriteItems,
+    'media.upload': createMediaUpload({ store, account, mediaRoot, uploadFile, now })
+  };
 
   return async event => {
     try {

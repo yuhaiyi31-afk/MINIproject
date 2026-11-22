@@ -14,10 +14,14 @@
 
     <view class="panel">
       <view class="heading">共享商品</view>
+      <button disabled="{{busy}}" bindtap="openItems">发布和管理我的商品</button>
       <input class="input" value="{{itemId}}" disabled="{{busy}}" maxlength="100" placeholder="商品 ID" bindinput="enterItem" />
       <button disabled="{{busy}}" bindtap="readFavorite">读取收藏状态</button>
       <button disabled="{{busy}}" data-operation="add" bindtap="setFavorite">收藏</button>
       <button disabled="{{busy}}" data-operation="remove" bindtap="setFavorite">取消收藏</button>
+      <button disabled="{{busy}}" bindtap="loadFavorites">读取我的收藏</button>
+      <button wx:for="{{favorites}}" wx:key="id" data-id="{{item.id}}" disabled="{{busy}}" bindtap="chooseFavorite">{{item.title}} · NZ$ {{item.price}}</button>
+      <button wx:if="{{favoritePagesLeft}}" disabled="{{busy}}" bindtap="loadMoreFavorites">加载更多收藏</button>
       <button disabled="{{busy}}" bindtap="confirmSold">将我的商品标记为已售</button>
       <button disabled="{{busy}}" bindtap="startChat">就此商品联系卖家</button>
     </view>

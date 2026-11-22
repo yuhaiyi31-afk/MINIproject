@@ -14,7 +14,8 @@ exports.main = async event => {
     handler = createTradeHandler({
       ...config,
       store: storeFor(app.database()),
-      authenticate: () => principalFrom(app.auth(), config.wechatAppId)
+      authenticate: () => principalFrom(app.auth(), config.wechatAppId),
+      uploadFile: (cloudPath, fileContent) => app.uploadFile({ cloudPath, fileContent })
     });
   }
   return handler(event);

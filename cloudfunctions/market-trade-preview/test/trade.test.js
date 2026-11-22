@@ -34,8 +34,10 @@ test('runtime requires a matching isolated environment and rejects live before S
   const live = 'cloud1-d9glh048lb56b8a00';
   assert.equal(previewConfig({ ...config, MARKET_TRADE_PREVIEW_ENV: live, TCB_ENV: live }), null);
   assert.deepEqual(previewConfig({ ...config, TCB_ENV: ENV }), {
-    environmentId: ENV, wechatAppId: WX_APP, allowTestProfiles: false
+    environmentId: ENV, wechatAppId: WX_APP, allowTestProfiles: false, mediaRoot: ''
   });
+  assert.equal(previewConfig({ ...config, TCB_ENV: ENV, MARKET_CATALOG_PREVIEW_BUCKET: 'fixture-bucket' }).mediaRoot,
+    `${ENV}.fixture-bucket`);
   assert.equal((await require('../index').main({ action: 'identity.status' })).error.code, 'TRADE_DISABLED');
 });
 
@@ -141,10 +143,11 @@ test('only the seller can mark a market item sold and the catalog reads that sam
   await code(buyer, 'items.markSold', { itemId: ITEM, ownerOpenId: SELLER }, 'ITEM_FORBIDDEN');
   await code(app, 'items.markSold', { itemId: 'fixture-service' }, 'ITEM_FORBIDDEN');
   await code(app, 'items.markSold', { itemId: 'fixture-deleted' }, 'ITEM_STATE');
-  const sold = await data(app, 'items.markSold', { itemId: ITEM });
+  const { revision } = await data(app, 'items.getOwned', { itemId: ITEM });
+  const sold = await data(app, 'items.markSold', { itemId: ITEM, revision });
   const original = f.rows(collections.items).find(item => item._id === ITEM);
   f.advance(1000);
-  assert.deepEqual(await data(seller, 'items.markSold', { itemId: ITEM }), sold);
+  assert.deepEqual(await data(seller, 'items.markSold', { itemId: ITEM, revision }), sold);
   assert.deepEqual(f.rows(collections.items).find(item => item._id === ITEM), original);
   assert.ok((await data(catalog, 'items.browse')).items.every(item => item.id !== ITEM));
   assert.deepEqual(await data(catalog, 'items.get', { itemId: ITEM }), { id: ITEM, status: 'SOLD', currency: 'NZD', images: [], thumbnail: null });
@@ -161,6 +164,10 @@ test('favorites are shared, idempotent and preserve legacy profile fields', asyn
   const saved = f.rows(collections.profiles).find(profile => profile._id === BUYER);
   assert.deepEqual(saved.favoriteItemIds, [ITEM]);
   assert.equal(saved.privatePhone, 'synthetic-private-value');
+  const listed = (await data(app, 'favorites.list')).items;
+  assert.equal(listed[0].id, ITEM);
+  assert.deepEqual((await data(f.handler('wx', OTHER), 'favorites.list')).items, []);
+  assert.ok(!JSON.stringify(listed).includes('synthetic-private-value'));
   await data(wx, 'favorites.set', { itemId: ITEM, favorited: false });
   assert.equal((await data(app, 'favorites.get', { itemId: ITEM })).favorited, false);
   await code(app, 'favorites.set', { itemId: 'fixture-service', favorited: true }, 'ITEM_UNAVAILABLE');
