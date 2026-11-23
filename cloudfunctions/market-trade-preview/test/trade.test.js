@@ -280,3 +280,62 @@ test('the inbox uses a stable cursor across conversations with the same update t
   const stranger = f.handler('wx', OTHER);
   assert.deepEqual((await data(stranger, 'chat.list', { limit: 1, cursor: firstPage.page.nextCursor })).conversations, []);
 });
+
+test('shared blocking applies to feeds and both senders while preserving old messages', async () => {
+  const f = fixture();
+  const buyer = f.handler('wx', BUYER);
+  const seller = f.handler('wx', SELLER);
+  const other = f.handler('wx', OTHER);
+  await code(seller, 'blocks.toggle', { itemId: ITEM, blocked: true }, 'BLOCK_SELF');
+  const before = await data(buyer, 'chat.get', { conversationId: CHAT });
+  await data(buyer, 'blocks.toggle', { itemId: ITEM, blocked: true });
+  assert.deepEqual(await data(buyer, 'blocks.filterListings', { itemIds: [ITEM] }), { hiddenIds: [ITEM] });
+  assert.deepEqual(await data(other, 'blocks.filterListings', { itemIds: [ITEM] }), { hiddenIds: [] });
+  for (const sender of [buyer, seller]) {
+    await code(sender, 'chat.send', { conversationId: CHAT, requestId: 'blocked-message', text: 'Blocked send' }, 'CHAT_BLOCKED');
+  }
+  assert.deepEqual(await data(buyer, 'chat.get', { conversationId: CHAT }), before);
+  const { users } = await data(buyer, 'blocks.list');
+  assert.equal(users.length, 1);
+  assert.ok(!JSON.stringify(users).includes(SELLER));
+  await data(other, 'blocks.toggle', { userId: users[0].id, blocked: false });
+  await code(seller, 'chat.send', { conversationId: CHAT, requestId: 'still-blocked', text: 'Blocked send' }, 'CHAT_BLOCKED');
+  await data(buyer, 'blocks.toggle', { userId: users[0].id, blocked: false });
+  await data(seller, 'chat.send', { conversationId: CHAT, requestId: 'unblocked-message', text: 'Unblocked send' });
+});
+
+test('only administrators read or resolve shared reports and audit failures roll back the decision', async () => {
+  let failAudit = true;
+  const f = fixture({ failAdd: row => failAudit && row.action === 'resolve_report_actioned' });
+  const buyer = f.handler('wx', BUYER);
+  const seller = f.handler('wx', SELLER);
+  const admin = f.handler('wx', OTHER);
+  await f.store.transaction(tx => tx.add(collections.admins, OTHER, { enabled: true }));
+  const input = { itemId: ITEM, targetType: 'ITEM', reason: '虚假描述', detail: 'Fixture report evidence' };
+  await code(seller, 'reports.submit', input, 'REPORT_SELF');
+  const report = await data(buyer, 'reports.submit', input);
+  assert.deepEqual(await data(buyer, 'reports.submit', input), report);
+  await code(buyer, 'admin.list', { type: 'REPORTS' }, 'ADMIN_REQUIRED');
+  const queue = await data(admin, 'admin.list', { type: 'REPORTS' });
+  assert.equal(queue.records[0].id, report.reportId);
+  assert.doesNotMatch(JSON.stringify(queue), /reporterOpenId|ownerOpenId|synthetic-private-value/);
+  const review = { reportId: report.reportId, decision: 'ACTIONED', resolution: '描述与证据不一致' };
+  await code(buyer, 'admin.report.resolve', review, 'ADMIN_REQUIRED');
+  await code(admin, 'admin.report.resolve', review, 'TRADE_UNAVAILABLE');
+  assert.equal(f.rows(collections.reports)[0].status, 'pending');
+  assert.equal(f.rows(collections.items).find(row => row._id === ITEM).status, 'active');
+  failAudit = false;
+  await data(admin, 'admin.report.resolve', review);
+  await data(admin, 'admin.report.resolve', review);
+  assert.equal(f.rows(collections.items).find(row => row._id === ITEM).status, 'suspended');
+  assert.equal((await data(admin, 'admin.list', { type: 'AUDIT' })).records.length, 1);
+  assert.equal((await data(buyer, 'chat.get', { conversationId: CHAT })).messages[0].id, 'legacy-msg-1');
+  const ban = { userId: SELLER, status: 'BANNED', reason: '平台规则违规测试' };
+  await code(admin, 'admin.user.status', { ...ban, userId: OTHER }, 'ADMIN_TARGET');
+  await data(admin, 'admin.user.status', ban);
+  await code(seller, 'profile.me', {}, 'PROFILE_REQUIRED');
+  const catalogue = createCatalogHandler({ store: f.catalogStore });
+  assert.equal((await catalogue({ action: 'items.get', itemId: 'fixture-second-item' })).error.code, 'ITEM_NOT_FOUND');
+  await data(admin, 'admin.user.status', { ...ban, status: 'ACTIVE' });
+  assert.ok((await catalogue({ action: 'items.get', itemId: 'fixture-second-item' })).ok);
+});

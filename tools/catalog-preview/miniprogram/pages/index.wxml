@@ -17,4 +17,21 @@
     <text wx:else>在售 · NZ$ {{evidence.priceCents / 100}}</text>
     <button bindtap="copyEvidence">复制验收结果</button>
   </view>
+  <view class="result">
+    <label class="label">服务大厅</label>
+    <picker range="{{categories}}" disabled="{{busy}}" bindchange="selectServiceCategory"><view class="input">{{serviceCategory}}</view></picker>
+    <button wx:if="{{!serviceLoaded || servicePage}}" disabled="{{busy}}" bindtap="loadServices">{{serviceLoaded ? '加载更多服务' : '浏览服务'}}</button>
+    <button disabled="{{busy}}" bindtap="openPublishService">发布和管理我的服务</button>
+    <view class="message" wx:if="{{serviceLoaded && !services.length}}">暂无此分类的服务</view>
+    <button class="listing" wx:for="{{services}}" wx:key="id" data-id="{{item.id}}" disabled="{{busy}}" bindtap="showService">{{item.title}} · NZ$ {{item.price}}</button>
+    <block wx:if="{{serviceDetail}}">
+      <text wx:if="{{serviceDetail.status === 'SOLD'}}">这条服务已结束</text>
+      <block wx:else>
+        <text>{{serviceDetail.title}} · NZ$ {{serviceDetail.price}}</text>
+        <text>{{serviceDetail.description}}</text>
+        <image wx:for="{{serviceDetail.images}}" wx:key="fileId" src="{{item.url}}" mode="aspectFit" />
+        <button bindtap="openServiceTrade">联系发布者或举报</button>
+      </block>
+    </block>
+  </view>
 </view>

@@ -15,7 +15,8 @@ exports.main = async event => {
       ...config,
       store: storeFor(app.database()),
       authenticate: () => principalFrom(app.auth(), config.wechatAppId),
-      uploadFile: (cloudPath, fileContent) => app.uploadFile({ cloudPath, fileContent })
+      uploadFile: (cloudPath, fileContent) => app.uploadFile({ cloudPath, fileContent }),
+      signFiles: fileList => app.getTempFileURL({ fileList })
     });
   }
   return handler(event);

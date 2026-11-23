@@ -50,6 +50,23 @@ function assetFileId(root, assetId) {
   return `cloud://${root}/market/images/${assetId}.jpg`;
 }
 
+async function attachAssets(tx, ids, targetId, openId, mediaRoot, now) {
+  check(mediaRoot, 'MEDIA_DISABLED', '测试图片存储尚未配置');
+  const assets = [];
+  for (const assetId of ids) {
+    const asset = await tx.get(collections.media, assetId);
+    check(ASSET_ID.test(assetId) && asset?.ownerOpenId === openId && asset.state === 'ready'
+      && asset.fileId === assetFileId(mediaRoot, assetId)
+      && (asset.itemId === targetId || (!asset.itemId && asset.expiresAtMs > now())),
+    'ITEM_IMAGE_FORBIDDEN', '图片已失效、已用于其他内容或不属于当前账号');
+    assets.push(asset);
+  }
+  for (let index = 0; index < ids.length; index++) {
+    if (!assets[index].itemId) await tx.update(collections.media, ids[index], { itemId: targetId });
+  }
+  return assets.map(asset => asset.fileId);
+}
+
 function createMediaUpload({ store, account, mediaRoot, uploadFile, now }) {
   return async (principal, input) => {
     check(mediaRoot && typeof uploadFile === 'function', 'MEDIA_DISABLED', '测试图片存储尚未配置');
@@ -97,4 +114,4 @@ function createMediaUpload({ store, account, mediaRoot, uploadFile, now }) {
   };
 }
 
-module.exports = { MAX_ENCODED_BYTES, ASSET_ID, assetFileId, createMediaUpload, sanitizeListingImage };
+module.exports = { MAX_ENCODED_BYTES, ASSET_ID, assetFileId, attachAssets, createMediaUpload, sanitizeListingImage };

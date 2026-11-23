@@ -10,7 +10,10 @@ const collections = Object.freeze({
   conversations: 'market_conversations',
   notifications: 'market_notifications',
   media: 'market_trade_media',
-  limits: 'market_trade_limits'
+  limits: 'market_trade_limits',
+  reports: 'market_reports',
+  admins: 'app_admins',
+  audit: 'admin_audit_logs'
 });
 const ID = /^[A-Za-z0-9_-]{1,128}$/;
 
@@ -40,6 +43,11 @@ function itemKey(value) {
   return itemId;
 }
 
+function publishType(value = 'market') {
+  check(value === 'market' || value === 'service', 'ITEM_FIELDS', '内容类型无效');
+  return value;
+}
+
 function array(value) {
   return Array.isArray(value) ? value : [];
 }
@@ -48,4 +56,4 @@ function label(value, length) {
   return typeof value === 'string' ? value.trim().slice(0, length) : '';
 }
 
-module.exports = { collections, ID, TradeError, check, hash, id, itemKey, array, label };
+module.exports = { collections, ID, TradeError, check, hash, id, itemKey, publishType, array, label };

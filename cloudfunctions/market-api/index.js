@@ -218,6 +218,18 @@ function favoriteIds(profile) {
   )).slice(0, 100);
 }
 
+async function excludeBannedPublishers(items) {
+  const owners = Array.from(new Set(items.map(item => item && item.ownerOpenId).filter(Boolean)));
+  const banned = new Set();
+  for (let start = 0; start < owners.length; start += 20) {
+    const result = await db.collection(USER_PROFILES)
+      .where({ _id: db.command.in(owners.slice(start, start + 20)), status: 'banned' })
+      .field({ _id: true }).limit(20).get();
+    (result.data || []).forEach(profile => banned.add(profile._id));
+  }
+  return items.filter(item => !banned.has(item.ownerOpenId));
+}
+
 async function listFavorites(openid) {
   const profile = await getUserProfile(openid);
   const ids = favoriteIds(profile);
@@ -234,7 +246,8 @@ async function listFavorites(openid) {
       data: { favoriteItemIds: activeIds, updatedAtMs: Date.now() }
     });
   }
-  return resolvePublicItems(ids.map(id => itemsById.get(id)).filter(item => item && !blockedUserIds.has(item.ownerOpenId)).map(item => publicListItem(item, openid)));
+  const visible = await excludeBannedPublishers(ids.map(id => itemsById.get(id)).filter(item => item && !blockedUserIds.has(item.ownerOpenId)));
+  return resolvePublicItems(visible.map(item => publicListItem(item, openid)));
 }
 
 function validate(data) {
@@ -331,10 +344,11 @@ async function scanItems(collection, input, predicate, openid) {
       hasMore = false;
       break;
     }
+    const visible = new Set((await excludeBannedPublishers(rows.filter(predicate))).map(item => item._id));
     let consumed = 0;
     for (const row of rows) {
       consumed += 1;
-      if (predicate(row)) items.push(publicListItem(row, openid));
+      if (visible.has(row._id)) items.push(publicListItem(row, openid));
       if (items.length >= limit) break;
     }
     offset += consumed;
@@ -355,7 +369,9 @@ async function queryItems(collection, input, conditions, openid) {
       .limit(limit + 1);
     const result = await listQueryFields(query).get();
     const rows = result.data || [];
-    const visibleRows = rows.slice(0, limit);
+    const pageRows = rows.slice(0, limit);
+    const visibleRows = await excludeBannedPublishers(pageRows);
+    if (visibleRows.length !== pageRows.length) return null;
     return {
       items: await resolvePublicItems(visibleRows.map(item => publicListItem(item, openid)).filter(Boolean)),
       hasMore: rows.length > limit,
@@ -424,9 +440,8 @@ async function browseItems(collection, input, openid) {
       reachedEnd = true;
       break;
     }
-    rows.forEach(item => {
-      if (browseMatches(item, input, blockedUserIds)) matched.push(item);
-    });
+    const visible = await excludeBannedPublishers(rows.filter(item => browseMatches(item, input, blockedUserIds)));
+    matched.push(...visible);
     documentOffset += rows.length;
     if (rows.length < 100) reachedEnd = true;
     if (sort === 'latest' && matched.length > skip + limit) break;
@@ -672,7 +687,9 @@ exports.main = async (event) => {
     const ids = favoriteIds(profile).filter(itemId => itemId !== id);
     if (input.favorited) {
       const result = await collection.doc(id).get();
-      if (!result.data || result.data.status !== 'active') throw new Error('内容不存在或已下架');
+      if (!result.data || result.data.status !== 'active' || !(await excludeBannedPublishers([result.data])).length) {
+        throw new Error('内容不存在或已下架');
+      }
       ids.unshift(id);
     }
     await db.collection(USER_PROFILES).doc(openid).update({
@@ -687,7 +704,9 @@ exports.main = async (event) => {
       const item = result.data || null;
       if (!item || (item.status !== 'active' && item.ownerOpenId !== openid)) return { ok: true, item: null };
       const isOwner = item.ownerOpenId === openid;
-      if (!isOwner && (await getBlockedUserIds(openid)).has(item.ownerOpenId)) return { ok: true, item: null };
+      if (!isOwner && ((await getBlockedUserIds(openid)).has(item.ownerOpenId) || !(await excludeBannedPublishers([item])).length)) {
+        return { ok: true, item: null };
+      }
       return {
         ok: true,
         item: {

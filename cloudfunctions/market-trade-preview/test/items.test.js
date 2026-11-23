@@ -135,6 +135,54 @@ test('only the owner can recover a publication by its original request ID', asyn
   assert.equal(f.rows(collections.items).filter(row => row.submissionHash).length, 1);
 });
 
+test('service publishing and chat keep the original service ID and preserve the conversation when the service ends', async () => {
+  const f = fixture();
+  const seller = f.handler('wx', SELLER);
+  const buyer = f.handler('wx', BUYER);
+  const { assetId } = await success(seller, 'media.upload', await imageInput('service-image'));
+  const input = {
+    requestId: 'publish-service', publishType: 'service', category: '搬家', price: '49.50',
+    title: 'Weekend moving help', description: 'Help with moving boxes', promiseReal: true, photoAssetIds: [assetId]
+  };
+  const item = await success(seller, 'items.publish', input);
+  assert.equal((await success(seller, 'items.publish', input)).id, item.id);
+  assert.deepEqual(await success(seller, 'items.publishStatus', { requestId: input.requestId }), { item: null });
+  assert.deepEqual(await success(seller, 'items.publishStatus', input), { item });
+  assert.equal((await success(seller, 'items.mine', { publishType: 'service' })).items[0].id, item.id);
+  assert.ok((await success(seller, 'items.mine')).items.every(row => row.id !== item.id));
+  await denied(buyer, 'chat.ensure', { itemId: item.id }, 'ITEM_UNAVAILABLE');
+  const chat = await success(buyer, 'chat.ensure', { itemId: item.id, publishType: 'service' });
+  assert.equal(chat.publishType, 'service');
+  await success(buyer, 'chat.send', { conversationId: chat.id, requestId: 'service-message', text: 'Are you available on Saturday?' });
+  const transition = { itemId: item.id, revision: item.revision, status: 'SOLD', publishType: 'service' };
+  await denied(buyer, 'items.transition', transition, 'ITEM_FORBIDDEN');
+  await success(seller, 'items.transition', transition);
+  const history = await success(seller, 'chat.get', { conversationId: chat.id });
+  assert.equal(history.itemId, item.id);
+  assert.equal(history.messages[0].text, 'Are you available on Saturday?');
+});
+
+test('profile edits bind an owned avatar receipt without altering legacy identity fields', async () => {
+  const f = fixture();
+  const signFiles = async files => ({
+    fileList: files.map(file => ({ ...file, status: 0, tempFileURL: 'https://fixture.invalid/avatar.jpg' }))
+  });
+  const seller = f.handler('wx', SELLER, { signFiles });
+  const buyer = f.handler('wx', BUYER);
+  const { assetId } = await success(seller, 'media.upload', await imageInput('new-avatar'));
+  await denied(buyer, 'profile.save', { nickName: 'Buyer', avatarAssetId: assetId }, 'ITEM_IMAGE_FORBIDDEN');
+  await denied(seller, 'profile.save', { nickName: 'owner@example.invalid' }, 'ITEM_CONTACT');
+  await success(seller, 'profile.save', { nickName: 'Updated display name', avatarAssetId: assetId });
+  const result = await success(seller, 'profile.me');
+  assert.equal(result.profile.nickName, 'Updated display name');
+  assert.equal(result.profile.avatar.url, 'https://fixture.invalid/avatar.jpg');
+  assert.equal(result.permissions.isAdmin, false);
+  await denied(seller, 'items.publish', { ...fields, requestId: 'avatar-reuse', promiseReal: true, photoAssetIds: [assetId] }, 'ITEM_IMAGE_FORBIDDEN');
+  assert.doesNotMatch(JSON.stringify(result), /synthetic-private-value|ownerOpenId|internalTestAccess/);
+  assert.equal(f.rows(collections.profiles).find(row => row._id === SELLER).privatePhone, 'synthetic-private-value');
+  assert.equal(f.rows(collections.items).find(row => row._id === ITEM).ownerOpenId, SELLER);
+});
+
 test('publication, text edits, image edits and visibility changes use the same ID throughout', async () => {
   const f = fixture();
   const seller = f.handler('wx', SELLER);

@@ -19,10 +19,17 @@
 | `chat.list`、`chat.ensure`、`chat.get` | 按页查看自己的会话，按商品打开会话，从当前页读取更早或更新的消息。 |
 | `chat.send`、`chat.markRead` | 发送消息或标记已读。发送重试沿用同一个 `requestId`。提交已看到的最后一条消息编号，可保留之后到达的未读消息。 |
 | `notifications.list`、`notifications.markRead` | 读取和标记现有收件人通知。 |
+| `profile.me`、`profile.save` | 读取绑定账号自己的资料和治理权限。更新昵称，附带当前账号上传的头像凭据。 |
+| `users.public` | 按在售商品或服务 ID 查询发布者有限资料和在售商品。 |
+| `reports.submit` | 依据在售商品或服务创建内容或发布者举报。重复提交返回原举报 ID。 |
+| `blocks.relationship`、`blocks.toggle`、`blocks.list`、`blocks.filterListings` | 管理共享拉黑名单，按当前账号的名单过滤推荐内容并限制双方继续发送消息。 |
+| `admin.list`、`admin.item.transition`、`admin.user.status`、`admin.report.resolve` | 已验证账号须在 `app_admins` 启用。治理状态与审计记录在同一事务提交，保留历史聊天。 |
 
 两个配对步骤生成独立随机码，有效期五分钟。服务端仅保存码的摘要。若 App 已经领取确认码但网络中断丢失了响应，请在微信端生成新的配对码。绑定索引的双向记录在同一事务内增删。平台用户 ID 基于环境、小程序 AppID 和原有微信身份生成，同一微信身份在该环境内解绑再绑定仍得到相同 ID。旧商品归属、收藏和聊天继续通过原微信身份识别。
 
 商品目录响应由公开字段白名单生成。交易函数检查商品所有权、会话参与身份及通知收件人，响应省去联系方式和底层身份字段。平台用户 ID 只出现在已登录账号的绑定结果中。未认证请求、第三人读取聊天、跨账号写入和重复发送均由本地测试覆盖。
+
+服务使用现有 `publishType: 'service'`，与 `'market'` 商品共用记录、照片和聊天接口。服务发布、编辑、状态查询和发起会话在对应请求中带 `publishType: 'service'`。省略时仍处理商品。服务公开描述省去私人联系方式，用户通过站内聊天联系发布者。
 
 ## 商品、图片与状态
 
@@ -39,9 +46,11 @@
 ## 云端验收
 
 1. 选用已获授权的独立环境和测试用微信小程序。将项目 `tools/catalog-preview` 的 AppID 替换成它的测试 AppID。在该环境开启邮箱验证码登录，配置客户端可公开使用的 Publishable Key。
-2. 准备 `market_items`、`user_profiles`、`market_conversations`、`market_notifications`、`market_identity_links`、`market_identity_invites`、`market_trade_media`、`market_trade_limits`。数据库集合和图片桶均仅允许服务端直接访问。按现有会话的买家或卖家、`updatedAtMs`，通知的 `recipientOpenId`、`createdAtMs`，及我的商品的 `ownerOpenId`、`publishType`、可选 `status`、`createdAtMs`、`_id` 查询建立需要的索引。历史会话查找按 `itemId`、`buyerOpenId`、`sellerOpenId` 查询。
+2. 准备 `market_items`、`user_profiles`、`market_conversations`、`market_notifications`、`market_identity_links`、`market_identity_invites`、`market_trade_media`、`market_trade_limits`、`market_reports`、`app_admins`、`admin_audit_logs`。数据库集合和图片桶均仅允许服务端直接访问。按现有会话的买家或卖家、`updatedAtMs`，通知的 `recipientOpenId`、`createdAtMs`，及我的商品的 `ownerOpenId`、`publishType`、可选 `status`、`createdAtMs`、`_id` 查询建立需要的索引。历史会话查找按 `itemId`、`buyerOpenId`、`sellerOpenId` 查询。按治理列表使用的时间和 `_id` 准备索引。测试管理员仅启用专用测试账号。
 3. 在该环境部署两个事件函数。交易函数使用 Node.js 20.9 或更新版本，安装匹配云端体系结构的 Sharp 可选依赖。配置 `MARKET_TRADE_PREVIEW_ENV` 和 `MARKET_TRADE_WECHAT_APP_ID`。两个函数的 `MARKET_CATALOG_PREVIEW_BUCKET` 填同一个测试桶后缀，保持 `cloud://环境ID.桶后缀` 与上传返回值一致。仅合成内测档案使用 `MARKET_TRADE_TEST_PROFILES=true`。建议给图片处理配置 512 MB 和 30 秒，并在测试环境核对真实响应耗时。交易函数仅由经过认证的测试客户端调用。
 4. 在小程序生成配对码，由 App 邮箱登录后换取确认码，再回小程序确认。分别用微信、Android 和 iOS 上传合成照片，各发布一件商品。核对三个客户端的 ID、价格和照片一致。用另一端编辑、换图、下架、重新上架、标为已售和删除。核对超时重试仅有一条商品记录、无关账号无法操作以及删除后原会话仍可访问。
 5. 使用 App 收藏，回小程序查看同一份收藏。测试双方读写原会话，重试发送并核对只有一条新消息。核对无关账号的私信和通知，以及解绑后的 App 写入权限。
 
-正式切换、举报、拉黑管理、账号恢复和通知推送有单独的验收与交付范围。
+6. 微信和 App 创建及浏览同一份服务。分别提交同一举报并核对只有一条记录。测试拉黑后列表及双向聊天发生相同变化，确认历史聊天可读。测试管理员核对举报、审核依据和审计记录，普通账号无法读取或执行治理操作。微信原有管理入口和 App 读取同一份治理数据。
+
+正式切换、账号恢复和通知推送有单独的验收与交付范围。

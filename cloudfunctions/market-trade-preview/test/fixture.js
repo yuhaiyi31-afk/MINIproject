@@ -26,6 +26,9 @@ function fixture({ failAdd, onUpload } = {}) {
     [collections.invites, new Map()],
     [collections.media, new Map()],
     [collections.limits, new Map()],
+    [collections.reports, new Map()],
+    [collections.admins, new Map()],
+    [collections.audit, new Map()],
     [collections.items, new Map([
       [ITEM, {
         _id: ITEM, ownerOpenId: SELLER, publishType: 'market', status: 'active', title: 'Fixture monitor',
@@ -72,7 +75,7 @@ function fixture({ failAdd, onUpload } = {}) {
 
   function collection(view, name) {
     const docs = view.get(name);
-    return {
+    const dbCollection = {
       doc(id) {
         return {
           async get() { return { data: docs.has(id) ? copy(docs.get(id)) : null }; },
@@ -118,6 +121,8 @@ function fixture({ failAdd, onUpload } = {}) {
         return query;
       }
     };
+    dbCollection.orderBy = (field, direction) => dbCollection.where({}).orderBy(field, direction);
+    return dbCollection;
   }
 
   const store = storeFor({
@@ -148,8 +153,12 @@ function fixture({ failAdd, onUpload } = {}) {
     handler, store, objects, rows: name => [...rows.get(name).values()].map(copy),
     advance: milliseconds => { clock += milliseconds; },
     catalogStore: {
-      list: async () => [...rows.get(collections.items).values()].filter(item => item.status === 'active' && item.publishType === 'market').map(copy),
-      get: async id => copy(rows.get(collections.items).get(id) || null)
+      list: async filters => [...rows.get(collections.items).values()].filter(item =>
+        item.status === 'active' && item.publishType === (filters.publishType || 'market')
+        && (!filters.category || item.category === filters.category)).map(copy),
+      get: async id => copy(rows.get(collections.items).get(id) || null),
+      unavailableAuthors: async items => new Set(items.map(item => item.ownerOpenId)
+        .filter(ownerId => rows.get(collections.profiles).get(ownerId)?.status === 'banned'))
     }
   };
 }

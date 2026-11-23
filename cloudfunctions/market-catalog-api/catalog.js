@@ -16,6 +16,7 @@ const CATEGORIES = new Set([
   '交通工具', '电子产品', '生活家居', '学习用品', '运动户外',
   '服饰美妆', '宠物用品', '乐器', '游戏娱乐', '其他'
 ]);
+const SERVICE_CATEGORIES = new Set(['接机', '搬家', '找工', '组局', '求助', '租房', '拼车', '代购']);
 const CONDITIONS = new Set(['全新', '几乎全新', '轻微使用', '正常使用', '明显使用']);
 const DELIVERIES = new Set(['当面交易', '买家自取', '邮寄', '双方协商']);
 const TEXT_MARKERS = /@|https?:\/\/|www\.|(?:联系|微信|手机号|电话|邮箱|地址|门牌|contact|wechat|whatsapp|telegram|e-?mail|address)\s*[:：]|\d(?:[\s()+.-]*\d){7,}|(?:路|街|巷)\s*\d+\s*号|\b(?:apt|apartment|flat|room|unit)\s*#?\s*\d+\b|\b\d+(?:[/-]\d+)?\s+(?:[a-z.'’-]+\s+){1,5}(?:street|st|road|rd|avenue|ave|drive|dr|lane|ln|court|ct|place|pl|way|crescent|cres|boulevard)\b/i;
@@ -23,7 +24,7 @@ const TEXT_MARKERS = /@|https?:\/\/|www\.|(?:联系|微信|手机号|电话|邮�
 const FIELDS = Object.freeze({
   _id: true, title: true, description: true, category: true, condition: true,
   region: true, deliveryMethod: true, price: true, publishType: true, status: true,
-  images: true, thumbnail: true, createdAtMs: true, updatedAtMs: true
+  images: true, thumbnail: true, createdAtMs: true, updatedAtMs: true, ownerOpenId: true
 });
 
 class CatalogError extends Error {
@@ -69,10 +70,11 @@ function priceBound(value) {
   return price;
 }
 
-function filtersFor(input) {
+function filtersFor(input, publishType) {
   const category = string(input.category, 40);
   const region = string(input.region, 80);
-  if ((category && !CATEGORIES.has(category)) || (region && !REGIONS.has(region))) {
+  const categories = publishType === 'service' ? SERVICE_CATEGORIES : CATEGORIES;
+  if ((category && !categories.has(category)) || (region && !REGIONS.has(region))) {
     throw new CatalogError('INVALID_FILTER', '请选择已有分类或区域');
   }
   const minPrice = priceBound(input.minPrice);
@@ -85,7 +87,8 @@ function filtersFor(input) {
   const sort = ['PRICE_ASC', 'PRICE_DESC'].includes(input.sort) ? input.sort : 'LATEST';
   const keyword = string(input.keyword, 60);
   if (keyword && !publicText(keyword, 60)) throw new CatalogError('INVALID_FILTER', '请使用商品关键词搜索');
-  return { category, region, minPrice, maxPrice, days, sort, keyword: keyword.normalize('NFKC').toLowerCase() };
+  const filters = { category, region, minPrice, maxPrice, days, sort, keyword: keyword.normalize('NFKC').toLowerCase() };
+  return publishType === 'service' ? { ...filters, publishType } : filters;
 }
 
 function orderFor(sort) {
@@ -122,8 +125,19 @@ function createStore(db) {
   const command = db.command;
   const collection = () => db.collection('market_items');
   return {
+    async unavailableAuthors(rows) {
+      const ids = [...new Set(rows.map(row => row?.ownerOpenId).filter(value => typeof value === 'string' && value.length > 0))];
+      const unavailable = new Set();
+      for (let start = 0; start < ids.length; start += 20) {
+        const result = await db.collection('user_profiles')
+          .where({ _id: command.in(ids.slice(start, start + 20)), status: 'banned' }).field({ _id: true }).limit(20).get();
+        if (!Array.isArray(result.data)) throw new CatalogError('CATALOG_UNAVAILABLE', '暂时无法核对发布者状态');
+        result.data.forEach(row => unavailable.add(row._id));
+      }
+      return unavailable;
+    },
     async list(filters, snapshot, after) {
-      const bounds = [{ publishType: 'market', status: 'active' }];
+      const bounds = [{ publishType: filters.publishType || 'market', status: 'active' }];
       bounds.push({ createdAtMs: command.gte(filters.days ? snapshot - filters.days * DAY_MS : 1).and(command.lte(snapshot)) });
       bounds.push({ price: command.gte(filters.minPrice ?? 0) });
       if (filters.maxPrice != null) bounds.push({ price: command.lte(filters.maxPrice) });
@@ -142,8 +156,8 @@ function createStore(db) {
       const result = await query.field(FIELDS).limit(BATCH_SIZE).get();
       return result.data;
     },
-    async get(id) {
-      const result = await collection().where({ _id: id, publishType: 'market' }).field(FIELDS).limit(1).get();
+    async get(id, publishType = 'market') {
+      const result = await collection().where({ _id: id, publishType }).field(FIELDS).limit(1).get();
       return result.data[0];
     }
   };
@@ -156,20 +170,23 @@ function mediaRef(value, mediaRoot) {
   return /^market\/(images|thumbnails)\/[a-zA-Z0-9_-]+\.(?:jpe?g|png|webp)$/.test(path) ? value : '';
 }
 
-function listingFor(row, full, mediaRoot) {
-  if (!row || row.publishType !== 'market' || typeof row._id !== 'string' || !ID.test(row._id)) return null;
-  if (row.status === 'sold' && full) return { dto: { id: row._id, status: 'SOLD', currency: 'NZD', images: [], thumbnail: null }, images: [], thumbnail: '' };
+function listingFor(row, full, mediaRoot, publishType) {
+  if (!row || row.publishType !== publishType || typeof row._id !== 'string' || !ID.test(row._id)) return null;
+  const isService = publishType === 'service';
+  const kind = isService ? { publishType } : {};
+  if (row.status === 'sold' && full) return { dto: { id: row._id, ...kind, status: 'SOLD', currency: 'NZD', images: [], thumbnail: null }, images: [], thumbnail: '' };
   if (row.status !== 'active' || !validNumber(row.price) || !Number.isSafeInteger(row.createdAtMs) || row.createdAtMs <= 0) return null;
   const images = [...new Set((Array.isArray(row.images) ? row.images : []).slice(0, 9).map(ref => mediaRef(ref, mediaRoot)).filter(Boolean))];
   const thumbnail = mediaRef(row.thumbnail, mediaRoot) || images[0] || '';
   return {
     dto: {
       id: row._id,
-      title: publicText(row.title, 80) || '商品',
+      ...kind,
+      title: publicText(row.title, 80) || (isService ? '服务' : '商品'),
       description: publicText(row.description, 1000),
       price: row.price,
       currency: 'NZD',
-      category: allowed(CATEGORIES, row.category, '其他'),
+      category: allowed(isService ? SERVICE_CATEGORIES : CATEGORIES, row.category, '其他'),
       condition: allowed(CONDITIONS, row.condition),
       region: allowed(REGIONS, row.region),
       deliveryMethod: allowed(DELIVERIES, row.deliveryMethod),
@@ -225,14 +242,17 @@ function createCatalogHandler({ store, mediaRoot = '', signFiles, clock = Date.n
     try {
       const input = requestBody(event);
       const now = clock();
-      if (input?.action === 'items.get') {
+      const publishType = ['services.get', 'services.browse'].includes(input?.action) ? 'service' : 'market';
+      if (input?.action === 'items.get' || input?.action === 'services.get') {
         if (typeof input.itemId !== 'string' || !ID.test(input.itemId)) throw new CatalogError('ITEM_NOT_FOUND', '商品不存在');
-        const item = listingFor(await store.get(input.itemId), true, mediaRoot);
+        const row = await store.get(input.itemId, publishType);
+        const unavailable = row?.status === 'active' ? await store.unavailableAuthors?.([row]) : null;
+        const item = unavailable?.has(row.ownerOpenId) ? null : listingFor(row, true, mediaRoot, publishType);
         if (!item) throw new CatalogError('ITEM_NOT_FOUND', '商品不存在或已下架');
         return { ok: true, data: (await addMedia([item], signFiles, now))[0] };
       }
-      if (input?.action !== 'items.browse') throw new CatalogError('ACTION_NOT_ALLOWED', '商品预览只支持浏览和查询详情');
-      const filters = filtersFor(input);
+      if (input?.action !== 'items.browse' && input?.action !== 'services.browse') throw new CatalogError('ACTION_NOT_ALLOWED', '目录只支持浏览和查询详情');
+      const filters = filtersFor(input, publishType);
       const limit = Math.min(PAGE_LIMIT, Math.max(1, Math.floor(Number(input.limit) || 20)));
       const { snapshot, after } = readCursor(input.cursor, filters, now);
       const items = [];
@@ -240,14 +260,17 @@ function createCatalogHandler({ store, mediaRoot = '', signFiles, clock = Date.n
       let hasMore = true;
       for (let index = 0; index < MAX_BATCHES && items.length < limit; index++) {
         const rows = await store.list(filters, snapshot, position);
+        const unavailable = await store.unavailableAuthors?.(rows);
         let consumed = 0;
         for (const row of rows) {
-          const listing = listingFor(row, false, mediaRoot);
-          if (!listing) throw new CatalogError('CATALOG_INVALID_RECORD', '商品列表暂不可用');
           position = row;
           consumed++;
+          if (unavailable?.has(row.ownerOpenId)) continue;
+          const listing = listingFor(row, false, mediaRoot, publishType);
+          if (!listing) throw new CatalogError('CATALOG_INVALID_RECORD', '商品列表暂不可用');
           if (matches(listing.dto, filters.keyword)) {
-            items.push({ ...listing, dto: { ...listing.dto, description: '' } });
+            const description = publishType === 'service' ? listing.dto.description.slice(0, 160) : '';
+            items.push({ ...listing, dto: { ...listing.dto, description } });
           }
           if (items.length === limit) break;
         }

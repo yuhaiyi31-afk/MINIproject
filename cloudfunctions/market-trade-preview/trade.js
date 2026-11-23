@@ -1,9 +1,10 @@
 'use strict';
 
 const { createHash, randomBytes, timingSafeEqual } = require('node:crypto');
-const { collections, ID, TradeError, check, hash, id, itemKey, array, label } = require('./shared');
+const { collections, ID, TradeError, check, hash, id, itemKey, publishType, array, label } = require('./shared');
 const { createItemActions, ownerItem, favoriteItem, OPTIONS } = require('./items');
 const { createMediaUpload, MAX_ENCODED_BYTES } = require('./media');
+const { createGovernance } = require('./governance');
 const INVITE_MS = 5 * 60 * 1000;
 const SECRET = /^[a-f0-9]{48}$/;
 
@@ -27,7 +28,7 @@ function inputFrom(event) {
   return event?.body || event;
 }
 
-function createTradeHandler({ store, authenticate, environmentId, wechatAppId, allowTestProfiles = false, now = Date.now, mediaRoot = '', uploadFile }) {
+function createTradeHandler({ store, authenticate, environmentId, wechatAppId, allowTestProfiles = false, now = Date.now, mediaRoot = '', uploadFile, signFiles }) {
   const key = (provider, identity) => `${provider}_${hash(environmentId, wechatAppId, provider, identity).slice(0, 40)}`;
 
   async function requireProfile(tx, openId) {
@@ -71,8 +72,10 @@ function createTradeHandler({ store, authenticate, environmentId, wechatAppId, a
     return { openId, profile };
   }
 
+  const governance = createGovernance({ store, account, scopedQuery, mediaRoot, signFiles, now });
   const actions = {
     ...createItemActions({ account, now, mediaRoot }),
+    ...governance.actions,
 
     'identity.status': async (tx, principal) => {
       const link = await verifiedLink(tx, principal);
@@ -156,6 +159,8 @@ function createTradeHandler({ store, authenticate, environmentId, wechatAppId, a
         const item = await tx.get(collections.items, itemId);
         check(item?.status === 'active' && item.publishType === 'market' && item.ownerOpenId
           && !array(profile.blockedUserIds).includes(item.ownerOpenId), 'ITEM_UNAVAILABLE', '该商品无法收藏');
+        const owner = await tx.get(collections.profiles, item.ownerOpenId);
+        check(owner?.status !== 'banned', 'ITEM_UNAVAILABLE', '该商品无法收藏');
         check(favorites.length < 100, 'FAVORITES_FULL', '收藏已满，请先移除不需要的收藏');
       }
       const favoriteItemIds = input.favorited ? [itemId, ...favorites] : favorites.filter(value => value !== itemId);
@@ -255,10 +260,11 @@ function createTradeHandler({ store, authenticate, environmentId, wechatAppId, a
 
   async function ensureChat(principal, input) {
     const itemId = itemKey(input.itemId);
+    const type = publishType(input.publishType);
     const saleContext = async tx => {
       const buyer = await account(tx, principal);
       const item = await tx.get(collections.items, itemId);
-      check(item?.publishType === 'market' && item.status === 'active' && ID.test(item.ownerOpenId || ''),
+      check(item?.publishType === type && item.status === 'active' && ID.test(item.ownerOpenId || ''),
         'ITEM_UNAVAILABLE', '该商品当前无法发起会话');
       const sellerId = item.ownerOpenId;
       check(sellerId !== buyer.openId, 'CHAT_SELF', '无法就自己的商品发起会话');
@@ -284,7 +290,7 @@ function createTradeHandler({ store, authenticate, environmentId, wechatAppId, a
       }
       const time = now();
       const conversation = {
-        _id: conversationId, publicId: conversationId, itemId, itemType: 'product',
+        _id: conversationId, publicId: conversationId, itemId, itemType: type === 'service' ? 'service' : 'product',
         itemTitle: label(item.title, 80), itemPrice: Number(item.price) || 0,
         buyerOpenId: buyerId, sellerOpenId: sellerId,
         buyerName: label(buyer.profile.nickName, 30), sellerName: label(seller.nickName, 30),
@@ -298,12 +304,13 @@ function createTradeHandler({ store, authenticate, environmentId, wechatAppId, a
   async function listOwnedItems(principal, input) {
     const offset = input.offset ?? 0;
     const status = input.status || '';
+    const type = publishType(input.publishType);
     const statuses = ['', 'ACTIVE', 'SOLD', 'UNLISTED', 'DELETED', 'SUSPENDED', 'DELETING'];
     check(Number.isSafeInteger(offset) && offset >= 0 && offset <= 100000 && statuses.includes(status),
       'ITEM_LIST', '我的商品筛选或页码无效');
-    const { openId, result } = await scopedQuery(principal, id => store.itemsFor(id, status.toLowerCase(), offset));
+    const { openId, result } = await scopedQuery(principal, id => store.itemsFor(id, status.toLowerCase(), offset, type));
     return {
-      items: result.slice(0, 20).filter(item => item.ownerOpenId === openId && item.publishType === 'market').map(ownerItem),
+      items: result.slice(0, 20).filter(item => item.ownerOpenId === openId && item.publishType === type).map(ownerItem),
       page: { hasMore: result.length > 20, nextOffset: offset + 20 }
     };
   }
@@ -317,6 +324,11 @@ function createTradeHandler({ store, authenticate, environmentId, wechatAppId, a
       const ids = favorites.slice(offset, offset + 20);
       const blocked = new Set(array(profile.blockedUserIds));
       const rows = ids.length ? await store.activeItemsById(ids) : [];
+      const ownerIds = [...new Set(rows.map(item => item.ownerOpenId).filter(Boolean))];
+      const owners = ownerIds.length ? await store.profilesById(ownerIds) : [];
+      for (const owner of owners) {
+        if (owner.status === 'banned') blocked.add(owner._id);
+      }
       const byId = new Map(rows.filter(item => !blocked.has(item.ownerOpenId)).map(item => [item._id, item]));
       return {
         items: ids.filter(itemId => byId.has(itemId)).map(itemId => favoriteItem(byId.get(itemId))),
@@ -327,6 +339,7 @@ function createTradeHandler({ store, authenticate, environmentId, wechatAppId, a
   }
 
   const queryActions = {
+    ...governance.queries,
     'chat.list': listChats,
     'chat.ensure': ensureChat,
     'notifications.list': listNotifications,
@@ -371,6 +384,7 @@ function chatSummary(conversation, role) {
   return {
     id: conversation._id,
     itemId: conversation.itemId,
+    ...(conversation.itemType === 'service' ? { publishType: 'service' } : {}),
     title: label(conversation.itemTitle, 80),
     itemPrice: Number(conversation.itemPrice) || 0,
     otherName: label(role === 'buyer' ? conversation.sellerName : conversation.buyerName, 40),

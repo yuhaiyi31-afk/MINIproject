@@ -4,14 +4,16 @@ Page({
   data: {
     ready: false, busy: false, notice: '', linked: false, itemId: '',
     mode: '', invite: '', confirmation: '', conversations: [], conversationId: '', messages: [], draft: '', notifications: [],
-    favorites: [], favoritesOffset: 0, favoritePagesLeft: false
+    favorites: [], favoritesOffset: 0, favoritePagesLeft: false, service: false, blocked: false,
+    reportReasons: ['疑似诈骗', '禁售或违法物品', '虚假描述', '侵权或仿冒', '骚扰或不当行为', '其他'],
+    reportReason: '', reportDetail: '', blockedUsers: []
   },
 
   onLoad(options) {
     try {
       this.environmentId = options.env;
       this.call = createWechatTrade(wx.cloud, options.env);
-      this.setData({ ready: true, itemId: options.itemId || '' });
+      this.setData({ ready: true, itemId: options.itemId || '', service: options.publishType === 'service' });
       this.readStatus();
     } catch (error) {
       this.setData({ notice: error.message });
@@ -19,7 +21,8 @@ Page({
   },
 
   openItems() {
-    wx.navigateTo({ url: `/pages/items?env=${encodeURIComponent(this.environmentId)}` });
+    const suffix = this.data.service ? '&publishType=service' : '';
+    wx.navigateTo({ url: '/pages/items?env=' + encodeURIComponent(this.environmentId) + suffix });
   },
 
   async run(operation) {
@@ -66,7 +69,7 @@ Page({
   },
 
   enterItem(event) {
-    this.setData({ itemId: event.detail.value });
+    this.setData({ itemId: event.detail.value, blocked: false });
   },
 
   readFavorite() {
@@ -133,8 +136,54 @@ Page({
 
   startChat() {
     return this.run(async () => {
-      const chat = await this.call('chat.ensure', { itemId: this.data.itemId.trim() });
+      const chat = await this.call('chat.ensure', { itemId: this.data.itemId.trim(), publishType: this.data.service ? 'service' : 'market' });
       await this.readMessages(chat.id);
+    });
+  },
+
+  selectReason(event) {
+    this.setData({ reportReason: this.data.reportReasons[Number(event.detail.value)] });
+  },
+
+  enterReportDetail(event) { this.setData({ reportDetail: event.detail.value }); },
+
+  submitReport(event) {
+    return this.run(async () => {
+      const { itemId, reportReason, reportDetail } = this.data;
+      await this.call('reports.submit', {
+        itemId: itemId.trim(), targetType: event.currentTarget.dataset.type, reason: reportReason, detail: reportDetail
+      });
+      this.setData({ notice: '举报已提交', reportDetail: '', reportReason: '' });
+    });
+  },
+
+  readRelationship() {
+    return this.run(async () => {
+      const { blocked } = await this.call('blocks.relationship', { itemId: this.data.itemId.trim() });
+      this.setData({ blocked, notice: blocked ? '此发布者已拉黑' : '未拉黑此发布者' });
+    });
+  },
+
+  toggleBlock(event) {
+    const blocked = event.currentTarget.dataset.action === 'block';
+    return this.run(async () => {
+      await this.call('blocks.toggle', { itemId: this.data.itemId.trim(), blocked });
+      this.setData({ blocked, notice: blocked ? '已拉黑发布者' : '已取消拉黑' });
+    });
+  },
+
+  loadBlocked() {
+    return this.run(async () => {
+      const { users } = await this.call('blocks.list');
+      this.setData({ blockedUsers: users, notice: users.length ? '' : '暂无拉黑用户' });
+    });
+  },
+
+  unblock(event) {
+    const { id } = event.currentTarget.dataset;
+    return this.run(async () => {
+      await this.call('blocks.toggle', { userId: id, blocked: false });
+      this.setData({ blockedUsers: this.data.blockedUsers.filter(user => user.id !== id), notice: '已取消拉黑' });
     });
   },
 

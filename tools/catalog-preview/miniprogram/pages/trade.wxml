@@ -13,17 +13,33 @@
     </view>
 
     <view class="panel">
-      <view class="heading">共享商品</view>
-      <button disabled="{{busy}}" bindtap="openItems">发布和管理我的商品</button>
-      <input class="input" value="{{itemId}}" disabled="{{busy}}" maxlength="100" placeholder="商品 ID" bindinput="enterItem" />
-      <button disabled="{{busy}}" bindtap="readFavorite">读取收藏状态</button>
-      <button disabled="{{busy}}" data-operation="add" bindtap="setFavorite">收藏</button>
-      <button disabled="{{busy}}" data-operation="remove" bindtap="setFavorite">取消收藏</button>
-      <button disabled="{{busy}}" bindtap="loadFavorites">读取我的收藏</button>
-      <button wx:for="{{favorites}}" wx:key="id" data-id="{{item.id}}" disabled="{{busy}}" bindtap="chooseFavorite">{{item.title}} · NZ$ {{item.price}}</button>
-      <button wx:if="{{favoritePagesLeft}}" disabled="{{busy}}" bindtap="loadMoreFavorites">加载更多收藏</button>
-      <button disabled="{{busy}}" bindtap="confirmSold">将我的商品标记为已售</button>
-      <button disabled="{{busy}}" bindtap="startChat">就此商品联系卖家</button>
+      <view class="heading">{{service ? '共享服务' : '共享商品'}}</view>
+      <button disabled="{{busy}}" bindtap="openItems">发布和管理我的{{service ? '服务' : '商品'}}</button>
+      <input class="input" value="{{itemId}}" disabled="{{busy}}" maxlength="100" placeholder="{{service ? '服务 ID' : '商品 ID'}}" bindinput="enterItem" />
+      <block wx:if="{{!service}}">
+        <button disabled="{{busy}}" bindtap="readFavorite">读取收藏状态</button>
+        <button disabled="{{busy}}" data-operation="add" bindtap="setFavorite">收藏</button>
+        <button disabled="{{busy}}" data-operation="remove" bindtap="setFavorite">取消收藏</button>
+        <button disabled="{{busy}}" bindtap="loadFavorites">读取我的收藏</button>
+        <button wx:for="{{favorites}}" wx:key="id" data-id="{{item.id}}" disabled="{{busy}}" bindtap="chooseFavorite">{{item.title}} · NZ$ {{item.price}}</button>
+        <button wx:if="{{favoritePagesLeft}}" disabled="{{busy}}" bindtap="loadMoreFavorites">加载更多收藏</button>
+        <button disabled="{{busy}}" bindtap="confirmSold">将我的商品标记为已售</button>
+      </block>
+      <button disabled="{{busy || blocked}}" bindtap="startChat">联系发布者</button>
+    </view>
+
+    <view class="panel">
+      <view class="heading">举报与拉黑</view>
+      <picker range="{{reportReasons}}" disabled="{{busy}}" bindchange="selectReason"><view class="input">{{reportReason || '选择举报原因'}}</view></picker>
+      <textarea class="input" value="{{reportDetail}}" disabled="{{busy}}" maxlength="300" placeholder="补充说明" bindinput="enterReportDetail" />
+      <button data-type="ITEM" disabled="{{busy || !itemId || !reportReason}}" bindtap="submitReport">举报{{service ? '服务' : '商品'}}</button>
+      <button data-type="USER" disabled="{{busy || !itemId || !reportReason}}" bindtap="submitReport">举报发布者</button>
+      <button disabled="{{busy || !itemId}}" bindtap="readRelationship">查看拉黑状态</button>
+      <button data-action="{{blocked ? 'unblock' : 'block'}}" disabled="{{busy || !itemId}}" bindtap="toggleBlock">{{blocked ? '取消拉黑发布者' : '拉黑发布者'}}</button>
+      <button disabled="{{busy}}" bindtap="loadBlocked">查看已拉黑用户</button>
+      <view wx:for="{{blockedUsers}}" wx:key="id">
+        <text>{{item.nickName}}</text><button data-id="{{item.id}}" disabled="{{busy}}" bindtap="unblock">取消拉黑</button>
+      </view>
     </view>
 
     <view class="panel">

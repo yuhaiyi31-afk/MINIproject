@@ -22,13 +22,14 @@ function product(id, overrides = {}) {
 
 // The catalogue is tested through its real CloudBase query adapter. The local
 // database fixture implements the limited document query operations it uses.
-function fixtureDatabase(documents) {
+function fixtureDatabase(documents, profiles) {
   const compare = predicate => ({ predicate, and: other => compare(value => predicate(value) && other.predicate(value)) });
   const command = {
     gte: expected => compare(value => value >= expected),
     gt: expected => compare(value => value > expected),
     lte: expected => compare(value => value <= expected),
     lt: expected => compare(value => value < expected),
+    in: expected => compare(value => expected.includes(value)),
     and: (...children) => row => children.every(expression => matches(row, expression)),
     or: (...children) => row => children.some(expression => matches(row, expression))
   };
@@ -38,7 +39,8 @@ function fixtureDatabase(documents) {
   return {
     command,
     collection(name) {
-      assert.equal(name, 'market_items');
+      assert.ok(['market_items', 'user_profiles'].includes(name));
+      const rows = name === 'market_items' ? documents : profiles;
       return {
         where(expression) {
           const orders = [];
@@ -49,7 +51,7 @@ function fixtureDatabase(documents) {
             field(projection) { fields = projection; return this; },
             limit(limit) { count = limit; return this; },
             async get() {
-              const sorted = documents.filter(row => matches(row, expression)).sort((a, b) => {
+              const sorted = rows.filter(row => matches(row, expression)).sort((a, b) => {
                 for (const [field, direction] of orders) {
                   if (a[field] === b[field]) continue;
                   const comparison = a[field] < b[field] ? -1 : 1;
@@ -66,10 +68,10 @@ function fixtureDatabase(documents) {
   };
 }
 
-function fixture(documents) {
+function fixture(documents, profiles = []) {
   const signed = [];
   const handler = createCatalogHandler({
-    store: createStore(fixtureDatabase(documents)),
+    store: createStore(fixtureDatabase(documents, profiles)),
     mediaRoot: ROOT,
     clock: () => NOW,
     signFiles: async (batch) => {
@@ -136,6 +138,29 @@ test('projection excludes account data and only signs this environment’s produ
   assert.equal(result.data.images.length, 1);
   assert.equal(result.data.images[0].fileId, 'listing-1:0');
   assert.doesNotMatch(JSON.stringify(result), /contact-private|private-owner|Queen Street|fixture-bucket|publisherAvatar|ownerOpenId/);
+});
+
+test('services stay in their own catalogue and a banned publisher cannot surface in either feed', async () => {
+  const service = product('live-service', {
+    publishType: 'service', category: '搬家', title: '周末搬家协助',
+    ownerOpenId: 'active-owner', contact: 'fixture-private'
+  });
+  const hidden = product('hidden-service', { ...service, _id: 'hidden-service', ownerOpenId: 'banned-owner' });
+  const hiddenProduct = product('hidden-product', { ownerOpenId: 'banned-owner' });
+  const { handler } = fixture([service, hidden, hiddenProduct, product('product')], [
+    { _id: 'banned-owner', status: 'banned', personalData: 'fixture-private' }
+  ]);
+  const market = await handler({ action: 'items.browse' });
+  const services = await handler({ action: 'services.browse', category: '搬家' });
+  assert.deepEqual(market.data.items.map(item => item.id), ['product']);
+  assert.deepEqual(services.data.items.map(item => item.id), [service._id]);
+  assert.equal(services.data.items[0].publishType, 'service');
+  assert.equal(services.data.items[0].category, '搬家');
+  const detail = await handler({ action: 'services.get', itemId: service._id });
+  assert.equal(detail.data.id, service._id);
+  assert.doesNotMatch(JSON.stringify(detail), /ownerOpenId|active-owner|fixture-private/);
+  assert.equal((await handler({ action: 'items.get', itemId: service._id })).error.code, 'ITEM_NOT_FOUND');
+  assert.equal((await handler({ action: 'services.get', itemId: hidden._id })).error.code, 'ITEM_NOT_FOUND');
 });
 
 test('pagination uses stable ids at equal timestamps and survives a sale between pages', async () => {

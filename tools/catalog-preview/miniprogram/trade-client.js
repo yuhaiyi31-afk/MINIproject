@@ -5,7 +5,9 @@ const ACTIONS = new Set([
   'identity.status', 'identity.start', 'identity.confirm', 'items.markSold',
   'items.options', 'items.mine', 'items.getOwned', 'items.publish', 'items.publishStatus', 'items.edit', 'items.transition', 'media.upload',
   'favorites.get', 'favorites.set', 'favorites.list', 'chat.list', 'chat.ensure', 'chat.get', 'chat.send', 'chat.markRead',
-  'notifications.list', 'notifications.markRead'
+  'notifications.list', 'notifications.markRead',
+  'profile.me', 'profile.save', 'users.public', 'blocks.relationship', 'blocks.filterListings', 'blocks.list', 'blocks.toggle',
+  'reports.submit', 'admin.list', 'admin.item.transition', 'admin.user.status', 'admin.report.resolve'
 ]);
 
 function createWechatTrade(cloud, value) {

@@ -1,12 +1,13 @@
 'use strict';
 
 const { createHash } = require('node:crypto');
-const { collections, TradeError, check, hash, id, itemKey, array, label } = require('./shared');
-const { ASSET_ID, assetFileId } = require('./media');
+const { collections, TradeError, check, hash, id, itemKey, publishType, array, label } = require('./shared');
+const { ASSET_ID, attachAssets } = require('./media');
 const { assertAllowed } = require('./content-policy');
 
 const OPTIONS = {
   categories: ['交通工具', '电子产品', '生活家居', '学习用品', '运动户外', '服饰美妆', '宠物用品', '乐器', '游戏娱乐', '其他'],
+  serviceCategories: ['接机', '搬家', '找工', '组局', '求助', '租房', '拼车', '代购'],
   conditions: ['全新', '几乎全新', '轻微使用', '正常使用', '明显使用'],
   regions: ['Auckland CBD', 'Central Auckland', 'North Shore', 'East Auckland', 'West Auckland', 'South Auckland', '其他新西兰地区'],
   deliveryMethods: ['当面交易', '买家自取', '邮寄', '双方协商']
@@ -30,18 +31,25 @@ function publicField(value, max, fieldName) {
   return clean;
 }
 
-function fieldsFrom(input) {
+function fieldsFrom(input, type) {
   const title = publicField(input.title, 80, '标题');
   const description = publicField(input.description, 1000, '描述');
   const priceText = typeof input.price === 'string' || typeof input.price === 'number' ? String(input.price).trim() : '';
   const price = Number(priceText);
   check(/^[0-9]{1,9}(?:\.[0-9]{1,2})?$/.test(priceText) && price <= 100_000_000,
     'ITEM_PRICE', '请输入有效的 NZD 价格，最多两位小数');
-  check(OPTIONS.categories.includes(input.category), 'ITEM_FIELDS', '请选择商品分类');
-  check(OPTIONS.conditions.includes(input.condition), 'ITEM_FIELDS', '请选择商品新旧程度');
-  check(OPTIONS.regions.includes(input.region), 'ITEM_FIELDS', '请选择大致区域');
-  check(OPTIONS.deliveryMethods.includes(input.deliveryMethod), 'ITEM_FIELDS', '请选择交付方式');
-  const fields = { title, description, price, category: input.category, condition: input.condition, region: input.region, deliveryMethod: input.deliveryMethod };
+  const isService = type === 'service';
+  const categories = isService ? OPTIONS.serviceCategories : OPTIONS.categories;
+  check(categories.includes(input.category), 'ITEM_FIELDS', '请选择分类');
+  if (!isService) {
+    check(OPTIONS.conditions.includes(input.condition), 'ITEM_FIELDS', '请选择商品新旧程度');
+    check(OPTIONS.regions.includes(input.region), 'ITEM_FIELDS', '请选择大致区域');
+    check(OPTIONS.deliveryMethods.includes(input.deliveryMethod), 'ITEM_FIELDS', '请选择交付方式');
+  }
+  const fields = {
+    title, description, price, category: input.category, condition: isService ? '' : input.condition,
+    region: isService ? '' : input.region, deliveryMethod: isService ? '' : input.deliveryMethod
+  };
   try {
     assertAllowed(fields);
   } catch (error) {
@@ -67,7 +75,8 @@ function ownerItem(item) {
     title: label(item.title, 80), description: label(item.description, 1000), price: Number(item.price) || 0,
     currency: 'NZD', category: label(item.category, 40), condition: label(item.condition, 30),
     region: label(item.region, 80), deliveryMethod: label(item.deliveryMethod, 30),
-    imageCount: array(item.images).length
+    imageCount: array(item.images).length,
+    ...(item.publishType === 'service' ? { publishType: 'service' } : {})
   };
 }
 
@@ -94,28 +103,15 @@ function publishedItemId(openId, requestId) {
 }
 
 function createItemActions({ account, now, mediaRoot }) {
-  async function owned(tx, principal, itemId) {
+  async function owned(tx, principal, itemId, type) {
     const { openId } = await account(tx, principal);
     const item = await tx.get(collections.items, itemId);
-    check(item?.publishType === 'market' && item.ownerOpenId === openId, 'ITEM_FORBIDDEN', '无权访问或修改该商品');
+    check(item?.publishType === type && item.ownerOpenId === openId, 'ITEM_FORBIDDEN', '无权访问或修改该内容');
     return item;
   }
 
   async function attachPhotos(tx, ids, itemId, openId) {
-    check(mediaRoot, 'MEDIA_DISABLED', '测试图片存储尚未配置');
-    // Resolve every receipt before binding any of them to the item.
-    const assets = [];
-    for (const assetId of ids) {
-      const asset = await tx.get(collections.media, assetId);
-      check(asset?.ownerOpenId === openId && asset.state === 'ready' && asset.fileId === assetFileId(mediaRoot, assetId)
-        && (asset.itemId === itemId || (!asset.itemId && asset.expiresAtMs > now())),
-      'ITEM_IMAGE_FORBIDDEN', '图片已失效、已用于别的商品或不属于当前账号');
-      assets.push(asset);
-    }
-    for (let index = 0; index < ids.length; index++) {
-      if (!assets[index].itemId) await tx.update(collections.media, ids[index], { itemId });
-    }
-    const images = assets.map(asset => asset.fileId);
+    const images = await attachAssets(tx, ids, itemId, openId, mediaRoot, now);
     return { images, thumbnail: images[0], thumbnailSource: images[0] };
   }
 
@@ -125,7 +121,7 @@ function createItemActions({ account, now, mediaRoot }) {
       'ITEM_STATE', '当前商品状态不允许此操作');
     check(revision === revisionOf(item), 'ITEM_REVISION', '商品已在其他设备上更新，请重新打开');
     if (target === 'active') {
-      fieldsFrom(item);
+      fieldsFrom(item, item.publishType);
       check(array(item.images).length > 0, 'ITEM_IMAGES', '重新上架前请添加商品照片');
     }
     const time = nextWriteTime(item, now);
@@ -147,20 +143,21 @@ function createItemActions({ account, now, mediaRoot }) {
   }
 
   return {
-    'items.getOwned': async (tx, principal, input) => ownerItem(await owned(tx, principal, itemKey(input.itemId))),
+    'items.getOwned': async (tx, principal, input) => ownerItem(await owned(tx, principal, itemKey(input.itemId), publishType(input.publishType))),
 
     'items.publishStatus': async (tx, principal, input) => {
       const { openId } = await account(tx, principal);
       const requestId = id(input.requestId);
       const item = await tx.get(collections.items, publishedItemId(openId, requestId));
-      const ownedPublish = item?.ownerOpenId === openId && item?.clientRequestId === requestId && item?.publishType === 'market';
+      const ownedPublish = item?.ownerOpenId === openId && item?.clientRequestId === requestId && item?.publishType === publishType(input.publishType);
       return { item: ownedPublish ? ownerItem(item) : null };
     },
 
     'items.publish': async (tx, principal, input) => {
       const { openId, profile } = await account(tx, principal);
       const requestId = id(input.requestId);
-      const fields = fieldsFrom(input);
+      const type = publishType(input.publishType);
+      const fields = fieldsFrom(input, type);
       const ids = photoIds(input.photoAssetIds);
       check(input.promiseReal === true, 'ITEM_CONFIRMATION', '请确认商品信息真实、来源合法');
       const submissionHash = hash(fields, ids);
@@ -168,7 +165,7 @@ function createItemActions({ account, now, mediaRoot }) {
       const itemId = publishedItemId(openId, requestId);
       const existing = await tx.get(collections.items, itemId);
       if (existing) {
-        check(existing.ownerOpenId === openId && existing.submissionHash === submissionHash,
+        check(existing.ownerOpenId === openId && existing.publishType === type && existing.submissionHash === submissionHash,
           'ITEM_REQUEST_CONFLICT', '该发布请求已经处理，请在我的商品中查看');
         return ownerItem(existing);
       }
@@ -176,7 +173,8 @@ function createItemActions({ account, now, mediaRoot }) {
       const time = now();
       const item = {
         ...fields, ...media, ownerOpenId: openId, clientRequestId: requestId, submissionHash,
-        itemType: 'product', publishType: 'market', currency: 'NZD', status: 'active', promiseReal: true,
+        itemType: type === 'service' ? 'service' : 'product', publishType: type, currency: 'NZD', status: 'active', promiseReal: true,
+        ...(type === 'service' ? { subCategory: fields.category, contact: '站内聊天' } : {}),
         publisherNick: label(profile.nickName, 40), publisherAvatar: label(profile.avatarUrl, 500),
         sellerType: profile.sellerType === 'BUSINESS' ? 'BUSINESS' : 'PRIVATE',
         createdAtMs: time, updatedAtMs: time, statusChangedAtMs: time, statusChangedBy: 'owner',
@@ -187,9 +185,9 @@ function createItemActions({ account, now, mediaRoot }) {
     },
 
     'items.edit': async (tx, principal, input) => {
-      const item = await owned(tx, principal, itemKey(input.itemId));
+      const item = await owned(tx, principal, itemKey(input.itemId), publishType(input.publishType));
       const requestId = id(input.requestId);
-      const fields = fieldsFrom(input);
+      const fields = fieldsFrom(input, item.publishType);
       const ids = input.photoAssetIds === undefined ? null : photoIds(input.photoAssetIds);
       check(typeof input.revision === 'string' && /^[a-f0-9]{64}$/.test(input.revision), 'ITEM_REVISION', '请重新打开商品');
       const editHash = hash(fields, ids, input.revision);
@@ -203,6 +201,7 @@ function createItemActions({ account, now, mediaRoot }) {
       const media = ids ? await attachPhotos(tx, ids, item._id, item.ownerOpenId) : {};
       const time = nextWriteTime(item, now);
       const changes = { ...fields, ...media, lastEditRequestId: requestId, lastEditHash: editHash, updatedAt: new Date(time), updatedAtMs: time };
+      if (item.publishType === 'service') changes.subCategory = fields.category;
       await tx.update(collections.items, item._id, changes);
       return ownerItem({ ...item, ...changes });
     },
@@ -210,16 +209,16 @@ function createItemActions({ account, now, mediaRoot }) {
     'items.transition': async (tx, principal, input) => {
       const target = input.status;
       check(['ACTIVE', 'SOLD', 'UNLISTED', 'DELETED'].includes(target), 'ITEM_STATE', '商品状态无效');
-      const item = await owned(tx, principal, itemKey(input.itemId));
+      const item = await owned(tx, principal, itemKey(input.itemId), publishType(input.publishType));
       return transition(tx, item, target.toLowerCase(), input.revision);
     },
 
     'items.markSold': async (tx, principal, input) => {
-      const item = await owned(tx, principal, itemKey(input.itemId));
+      const item = await owned(tx, principal, itemKey(input.itemId), 'market');
       const sold = await transition(tx, item, 'sold', input.revision);
       return { id: sold.id, status: sold.status };
     }
   };
 }
 
-module.exports = { createItemActions, ownerItem, favoriteItem, OPTIONS };
+module.exports = { createItemActions, ownerItem, favoriteItem, publicField, OPTIONS };

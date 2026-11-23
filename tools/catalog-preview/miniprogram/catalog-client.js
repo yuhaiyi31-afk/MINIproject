@@ -57,6 +57,15 @@ function createWechatCatalog(cloud, value) {
     async get(itemId) {
       if (typeof itemId !== 'string' || !ITEM_ID.test(itemId)) throw new Error('填写有效的商品 ID');
       return evidenceFrom(environmentId, itemId, await invoke({ action: 'items.get', itemId }));
+    },
+    async services(category, cursor = '') {
+      const response = await invoke({ action: 'services.browse', category, cursor, limit: 20 });
+      if (!Array.isArray(response.items) || !response.page) throw new Error('服务列表回包格式异常');
+      return response;
+    },
+    async service(itemId) {
+      if (typeof itemId !== 'string' || !ITEM_ID.test(itemId)) throw new Error('填写有效的服务 ID');
+      return invoke({ action: 'services.get', itemId });
     }
   };
 }

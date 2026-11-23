@@ -1,12 +1,19 @@
 const { createWechatCatalog, testEnvironment } = require('../catalog-client');
 
 Page({
-  data: { environmentId: '', itemId: '', items: [], busy: false, loaded: false, error: '', evidence: null, copyable: '' },
+  data: {
+    environmentId: '', itemId: '', items: [], busy: false, loaded: false, error: '', evidence: null, copyable: '',
+    categories: ['接机', '搬家', '找工', '组局', '求助', '租房', '拼车', '代购'],
+    serviceCategory: '接机', services: [], servicePage: '', serviceLoaded: false, serviceDetail: null
+  },
 
   onEnvironmentInput(event) {
     this.client = null;
     this.connectedEnvironment = '';
-    this.setData({ environmentId: event.detail.value, items: [], itemId: '', loaded: false, error: '', evidence: null, copyable: '' });
+    this.setData({
+      environmentId: event.detail.value, items: [], itemId: '', loaded: false, error: '', evidence: null, copyable: '',
+      services: [], servicePage: '', serviceLoaded: false, serviceDetail: null
+    });
   },
 
   onItemInput(event) {
@@ -56,6 +63,55 @@ Page({
 
   copyEvidence() {
     if (this.data.copyable) wx.setClipboardData({ data: this.data.copyable });
+  },
+
+  selectServiceCategory(event) {
+    const serviceCategory = this.data.categories[Number(event.detail.value)];
+    this.setData({ serviceCategory, services: [], servicePage: '', serviceLoaded: false, serviceDetail: null });
+    return this.loadServices();
+  },
+
+  async loadServices() {
+    if (this.data.busy) return;
+    const { serviceCategory, servicePage } = this.data;
+    this.setData({ busy: true, error: '' });
+    try {
+      const client = this.getClient();
+      const { items, page } = await client.services(serviceCategory, servicePage);
+      this.setData({ services: servicePage ? [...this.data.services, ...items] : items, servicePage: page.nextCursor, serviceLoaded: true });
+    } catch (error) {
+      this.setData({ error: error.message || '读取服务失败' });
+    } finally {
+      this.setData({ busy: false });
+    }
+  },
+
+  async showService(event) {
+    if (this.data.busy) return;
+    this.setData({ busy: true, error: '', serviceDetail: null });
+    try {
+      this.setData({ serviceDetail: await this.getClient().service(event.currentTarget.dataset.id) });
+    } catch (error) {
+      this.setData({ error: error.message || '读取服务详情失败' });
+    } finally {
+      this.setData({ busy: false });
+    }
+  },
+
+  openPublishService() {
+    try {
+      const env = testEnvironment(this.data.environmentId);
+      wx.navigateTo({ url: '/pages/items?env=' + encodeURIComponent(env) + '&publishType=service' });
+    } catch (error) {
+      this.setData({ error: error.message });
+    }
+  },
+
+  openServiceTrade() {
+    const service = this.data.serviceDetail;
+    if (service?.status !== 'ACTIVE') return;
+    const env = this.connectedEnvironment;
+    wx.navigateTo({ url: '/pages/trade?publishType=service&env=' + encodeURIComponent(env) + '&itemId=' + encodeURIComponent(service.id) });
   },
 
   openTrade() {
