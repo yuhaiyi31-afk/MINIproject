@@ -582,3 +582,12 @@ page {
   background: #FF5A4E;
   color: #FFFFFF;
 }
+
+.product-card,.detail-card { margin: 12px 16px; padding: 16px; border-radius: 16px; background: #fff; }
+.price-row { flex-wrap: wrap; gap: 8px; }
+.campus-detail-amount { color: #A63E1F; font-size: 25px; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
+.detail-title { margin-top: 10px; color: #172E43; font-size: 22px; line-height: 1.4; overflow-wrap: anywhere; }
+.detail-desc { color: #172E43; font-size: 15px; line-height: 1.55; }
+.detail-bottom-bar button,.seller-chat-btn { min-height: 44px; }
+.buy-action,.owner-edit-action { background: #215B98; } .chat-action { background: #E8F2FC; color: #215B98; }
+.detail-secondary text { display: inline-flex; align-items:center; min-height: 44px; }

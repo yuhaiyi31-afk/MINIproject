@@ -2,7 +2,7 @@
   <view class="message-summary">
     <view>
       <text class="summary-title">交易消息</text>
-      <text class="summary-subtitle">及时处理买家的咨询与购买意向</text>
+      <text class="summary-subtitle">查看商品咨询与交易通知</text>
     </view>
     <view class="summary-unread">
       <text class="summary-number">{{stats.unread}}</text>
@@ -10,7 +10,7 @@
     </view>
   </view>
 
-  <view class="message-stats">
+  <view class="message-stats" wx:if="{{cards.length > 0}}">
     <view class="stat-item">
       <text class="stat-icon chat">💬</text>
       <text class="stat-number">{{stats.chat}}</text>
@@ -61,7 +61,8 @@
         <text class="message-item-title">{{item.subtitle}}</text>
         <text class="message-preview">{{item.preview}}</text>
       </view>
-      <view class="unread-dot" wx:if="{{!item.read}}"></view>
+      <text class="inbox-badge" wx:if="{{item.unreadCount > 0}}">{{item.unreadCount > 99 ? '99+' : item.unreadCount}}</text>
+      <text class="inbox-badge" wx:elif="{{!item.read}}">未读</text>
     </view>
   </view>
 
@@ -69,6 +70,7 @@
     <view class="empty-icon">{{errorText ? '!' : '💬'}}</view>
     <text class="empty-title">{{loading ? '正在读取消息…' : (errorText || '暂时没有这类消息')}}</text>
     <text class="empty-text" wx:if="{{!loading && !errorText}}">收藏、购买意向和聊天都会出现在这里</text>
-    <text class="empty-retry" wx:if="{{errorText}}" bindtap="refreshMessages">点击重试</text>
+    <button wx:if="{{!loading && !errorText}}" class="campus-secondary" bindtap="openMarket">去逛集市</button>
+    <text class="empty-retry" wx:if="{{errorText}}" bindtap="retryInbox">重新加载</text>
   </view>
 </view>

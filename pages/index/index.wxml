@@ -1,5 +1,5 @@
 <import src="../../templates/listing-card.wxml" />
-<view class="home-brand"><text class="campus-h1">奥大小助手</text><text class="campus-muted">奥克兰 · 新西兰</text></view>
+<view class="home-brand"><image class="home-logo" src="/assets/branding/mini-program-avatar.png" mode="aspectFit" /><text class="campus-h1">奥大小助手</text><text class="campus-muted">奥克兰 · 新西兰</text></view>
 <!-- 搜索框 -->
 <view class="search-area">
   <view class="search-bar {{showSearchPanel ? 'search-bar-active' : ''}}">

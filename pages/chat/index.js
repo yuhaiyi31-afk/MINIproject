@@ -32,6 +32,8 @@ Page({
     inputValue: '',
     keyboardHeight: 0,
     sending: false,
+    errorText: '',
+    sendError: '',
     toView: '',
     quickMessages: ['你好，还在吗？', '可以便宜一点吗？', '什么时候方便交易？', '我今天可以取货']
   },
@@ -80,13 +82,7 @@ Page({
       conversation = await messageCloud.getConversation(this.data.conversationId);
       if (!conversation) throw new Error('会话不存在');
     } catch (error) {
-      this.setData({ loading: false });
-      wx.showModal({
-        title: '无法读取会话',
-        content: messageCloud.getErrorMessage(error),
-        showCancel: false,
-        success: () => wx.navigateBack()
-      });
+      this.setData({ loading: false, errorText: messageCloud.getErrorMessage(error) });
       return;
     }
 
@@ -106,9 +102,10 @@ Page({
     this.setData({
       conversation: {
         ...conversation,
-        itemPriceText: priceFormat.formatPriceAmount(conversation.itemPrice)
+        campusPrice: priceFormat.formatMarketPrice(conversation.itemPrice)
       },
       messages,
+      errorText: '',
       currentRole,
       quickMessages,
       peerLabel: currentRole === 'seller' ? '买家' : '卖家',
@@ -171,6 +168,13 @@ Page({
     }
   },
 
+  openListing() {
+    const item = this.data.conversation;
+    if (!item || !item.itemId) { wx.showToast({ title: '这条会话没有关联商品', icon: 'none' }); return; }
+    const type = item.itemType === 'service' ? 'service' : 'product';
+    wx.navigateTo({ url: '/pages/market/detail/index?id=' + encodeURIComponent(item.itemId) + '&itemType=' + type + '&source=cloud' });
+  },
+  retryConversation() { this.loadConversation(false); },
   onInput(e) {
     this.setData({ inputValue: e.detail.value });
   },
@@ -186,16 +190,16 @@ Page({
   async sendMessage(text) {
     const value = String(text || '').trim();
     if (!value || this.data.sending) return;
-    this.setData({ sending: true });
+    this.setData({ sending: true, sendError: '' });
     try {
       const message = await messageCloud.addMessage(this.data.conversationId, value);
       const conversation = this.data.conversation || {};
       const renderedMessage = renderMessage(message, conversation, this.data.currentRole);
-      const messages = this.data.messages.concat(renderedMessage);
+      const messages = this.data.messages.some(row => row.id === renderedMessage.id) ? this.data.messages : this.data.messages.concat(renderedMessage);
       this._conversationVersion = Math.max(this._conversationVersion || 0, Number(message.createdAt) || 0);
       this._emptyPolls = 0;
       this.setData({
-        inputValue: '',
+        inputValue: this.data.inputValue.trim() === value ? '' : this.data.inputValue,
         messages,
         toView: `message-${renderedMessage.id}`,
         'conversation.lastMessage': value,
@@ -204,7 +208,7 @@ Page({
       this.schedulePoll(POLL_FAST_INTERVAL);
       wx.vibrateShort({ type: 'light' });
     } catch (error) {
-      wx.showToast({ title: messageCloud.getErrorMessage(error), icon: 'none' });
+      this.setData({ sendError: messageCloud.getErrorMessage(error) });
     } finally {
       this.setData({ sending: false });
     }

@@ -1,3 +1,4 @@
+const { formatMarketPrice } = require('../../../utils/price-format');
 const messageCloud = require('../../../utils/message-cloud');
 const itemRouter = require('../../../utils/item-router');
 const marketCloud = require('../../../utils/market-cloud');
@@ -48,6 +49,7 @@ Page({
   },
 
   async onLoad(options) {
+    this._detailOptions = options;
     var rawId = '';
     try { rawId = options.id ? decodeURIComponent(options.id) : ''; } catch (e) { rawId = options.id || ''; }
     var id = /^\d+$/.test(rawId) ? Number(rawId) : rawId;
@@ -79,11 +81,13 @@ Page({
     this.showItem(item);
   },
 
+  retryDetail() { this.setData({ loading: true, loadError: '' }); this.onLoad(this._detailOptions || {}); },
+
   showItem(item, cached) {
     const title = String(item.title || '').trim();
     const description = String(item.description || '').trim();
     this.setData({
-      item,
+      item: { ...item, campusPrice: formatMarketPrice(item.price) },
       currentImageIndex: 0,
       showDescription: !!description && description !== title,
       ownershipResolved: !cached || typeof item.isOwner === 'boolean',

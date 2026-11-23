@@ -79,7 +79,8 @@ async function call(action, data) {
 }
 
 function formatTime(timestamp) {
-  const value = Number(timestamp) || Date.now();
+  const value = Number(timestamp);
+  if (!Number.isFinite(value) || value <= 0) return '';
   const diff = Math.max(0, Date.now() - value);
   const minute = 60 * 1000;
   const hour = 60 * minute;
@@ -205,9 +206,11 @@ async function compressImage(path, maxSide, quality) {
   }
 }
 
-async function uploadImages(images, uploadedFiles, uploadKey) {
+async function uploadImages(images, uploadedFiles, uploadKey, onFileReady) {
   const source = (images || []).slice(0, 9);
   const result = [];
+  let completed = 0;
+  if (onFileReady) onFileReady(0, source.length);
   for (let index = 0; index < source.length; index += 3) {
     const tasks = source.slice(index, index + 3).map(async (path, batchIndex) => (
       uploadTracked(
@@ -219,7 +222,11 @@ async function uploadImages(images, uploadedFiles, uploadKey) {
       )
     ));
     const settled = await Promise.all(tasks.map(task => task.then(
-      value => ({ value }),
+      value => {
+        completed += 1;
+        if (onFileReady) onFileReady(completed, source.length);
+        return { value };
+      },
       error => ({ error })
     )));
     const failed = settled.find(entry => entry.error);
@@ -250,7 +257,7 @@ async function uploadThumbnail(path, uploadedFiles, uploadKey) {
   return uploadTracked(thumbnail, 'market/thumbnails', '.jpg', uploadedFiles, `${uploadKey}-thumbnail`);
 }
 
-async function saveItem(item, editId) {
+async function saveItem(item, editId, onFileReady) {
   const sourceImages = (item.images || []).slice(0, 9);
   const clientRequestId = String(
     item.clientRequestId || (item.id ? `legacy_${item.id}` : `publish_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`)
@@ -270,7 +277,7 @@ async function saveItem(item, editId) {
   const uploadedFiles = [];
   let uploadsComplete = false;
   try {
-    const images = await uploadImages(sourceImages, uploadedFiles, uploadKey);
+    const images = await uploadImages(sourceImages, uploadedFiles, uploadKey, onFileReady);
     const canReuseThumbnail = item.thumbnail
       && isUploaded(item.thumbnail)
       && String(sourceImages[0] || '') === String(item.thumbnailSource || '');

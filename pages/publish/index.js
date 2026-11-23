@@ -1,3 +1,4 @@
+const { formatMarketPrice } = require('../../utils/price-format');
 const marketCloud = require('../../utils/market-cloud');
 const userCloud = require('../../utils/user-cloud');
 const marketOptions = require('../../utils/market-options');
@@ -51,7 +52,8 @@ Page({
     promiseReal: false,
 
     // 提交状态
-    submitting: false
+    submitting: false,
+    uploadStatus: ''
   },
 
   onLoad(options) {
@@ -100,7 +102,7 @@ Page({
         description: item.description || '',
         categoryText: item.category || '',
         subCategory: item.subCategory || '',
-        price: String(item.price || ''),
+        price: item.price == null ? '' : String(item.price),
         contact: item.contact || '',
         condition: item.condition || '',
         region: item.region || '',
@@ -199,7 +201,7 @@ Page({
     if (!desc) { wx.showToast({ title: '请输入描述', icon: 'none' }); return; }
     if (!this.data.categoryText) { wx.showToast({ title: '请选择分类', icon: 'none' }); return; }
     const price = parseFloat(this.data.price);
-    if (!this.data.price || isNaN(price) || price < 0) { wx.showToast({ title: '请输入有效价格', icon: 'none' }); return; }
+    if (!/^\d+(\.\d{1,2})?$/.test(String(this.data.price).trim()) || !Number.isFinite(price) || price < 0) { wx.showToast({ title: '请输入有效价格', icon: 'none' }); return; }
     const contact = this.data.contact.trim();
     if (this.data.publishType === 'service' && !contact) { wx.showToast({ title: '请输入联系方式', icon: 'none' }); return; }
     if (this.data.publishType === 'market' && !this.data.condition) { wx.showToast({ title: '请选择新旧程度', icon: 'none' }); return; }
@@ -214,8 +216,6 @@ Page({
     if (policyMessage) { wx.showModal({ title: '无法发布', content: policyMessage, showCancel: false }); return; }
 
     this._submitInFlight = true;
-    this.setData({ submitting: true });
-    wx.showLoading({ title: this.data.isEdit ? '保存中...' : '发布中...', mask: true });
 
     const isService = this.data.publishType === 'service';
     const newItemId = Date.now();
@@ -245,23 +245,37 @@ Page({
       createdAt: new Date().toISOString()
     };
 
-    this.saveItemToCloud(newItem);
+    wx.showModal({
+      title: '发布前检查',
+      content: [title, formatMarketPrice(price), newItem.category, newItem.region, newItem.images.length + ' 张照片'].filter(Boolean).join('\n'),
+      cancelText: '继续编辑',
+      confirmText: this.data.isEdit ? '保存修改' : '确认发布',
+      success: (result) => {
+        if (!result.confirm) { this._submitInFlight = false; return; }
+        this.setData({ submitting: true, uploadStatus: '准备照片…' });
+        this.saveItemToCloud(newItem);
+      },
+      fail: () => { this._submitInFlight = false; }
+    });
   },
 
   async saveItemToCloud(item) {
     try {
-      await marketCloud.saveItem(item, this.data.isEdit ? this.data.editId : '');
+      const id = await marketCloud.saveItem(item, this.data.isEdit ? this.data.editId : '', (completed, total) => {
+        this.setData({ uploadStatus: completed < total ? '照片已就绪 ' + completed + ' / ' + total : '照片已就绪，正在保存…' });
+      });
+      if (!id) throw new Error('服务未返回发布编号，请确认发布结果');
       if (item.publishType === 'service') getApp().globalData.serviceNeedsRefresh = true;
       else getApp().globalData.marketNeedsRefresh = true;
       wx.hideLoading();
       wx.vibrateShort({ type: 'light' });
-      this.setData({ submitting: false });
+      this.setData({ submitting: false, uploadStatus: '' });
       wx.showToast({ title: this.data.isEdit ? '修改成功！' : '发布成功！', icon: 'success', duration: 1500 });
       setTimeout(() => { wx.navigateBack(); }, 1500);
     } catch (error) {
       wx.hideLoading();
       this._submitInFlight = false;
-      this.setData({ submitting: false });
+      this.setData({ submitting: false, uploadStatus: '' });
       wx.showModal({
         title: '真实发布失败',
         content: marketCloud.getErrorMessage(error),

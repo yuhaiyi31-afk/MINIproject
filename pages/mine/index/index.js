@@ -13,6 +13,7 @@ function formatRegisteredAt(value) {
 Page({
   data: {
     isLoggedIn: false,
+    statsReady: false,
     avatarUrl: '',
     nickName: '',
     maskedPhone: '',
@@ -64,7 +65,7 @@ Page({
       });
       return true;
     } else {
-      this.setData({ isLoggedIn: false, avatarUrl: '', nickName: '', maskedPhone: '', registeredAtText: '内测用户', sellerType: 'PRIVATE' });
+      this.setData({ statsReady: false, isLoggedIn: false, avatarUrl: '', nickName: '', maskedPhone: '', registeredAtText: '内测用户', sellerType: 'PRIVATE' });
       return false;
     }
   },
@@ -72,7 +73,7 @@ Page({
   applyCachedStats() {
     const cached = wx.getStorageSync('mineStatsCacheV1');
     if (cached && cached.savedAt && Date.now() - cached.savedAt < 30 * 60 * 1000) {
-      this.setData(cached.value);
+      this.setData({ ...cached.value, statsReady: true });
       return true;
     }
     return false;
@@ -86,7 +87,7 @@ Page({
     }
     const cached = wx.getStorageSync('mineStatsCacheV1');
     if (!force && cached && cached.savedAt && Date.now() - cached.savedAt < DASHBOARD_REFRESH_INTERVAL) {
-      this.setData(cached.value);
+      this.setData({ ...cached.value, statsReady: true });
       return;
     }
     if (this._statsPromise) return this._statsPromise;
@@ -106,7 +107,7 @@ Page({
           isBanned: dashboard.accountStatus === 'banned'
         };
         wx.setStorageSync('mineStatsCacheV1', { savedAt: Date.now(), value });
-        this.setData(value);
+        this.setData({ ...value, statsReady: true });
       })
       .catch(() => {})
       .finally(() => { this._statsPromise = null; });
@@ -118,6 +119,7 @@ Page({
     if (this.data.isLoggedIn) { this.onUserTap(); return; }
     wx.reLaunch({ url: '/pages/auth/index' });
   },
+  openPolicies() { wx.navigateTo({ url: '/pages/policies/index' }); },
   onCloseModal() { this.setData({ showLoginModal: false }); },
   onUserTap() {
     const userInfo = wx.getStorageSync('userInfo') || {};

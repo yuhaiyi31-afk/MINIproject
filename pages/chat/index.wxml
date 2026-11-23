@@ -1,15 +1,14 @@
 <view class="chat-page" style="padding-bottom: {{keyboardHeight}}px;" wx:if="{{conversation}}">
-  <view class="chat-product">
+  <view class="chat-product" bindtap="openListing" aria-role="button" aria-label="查看关联商品">
     <view class="product-thumb">
       <image wx:if="{{conversation.itemThumb}}" src="{{conversation.itemThumb}}" mode="aspectFill"></image>
       <text wx:else>{{conversation.itemIcon}}</text>
     </view>
     <view class="product-info">
       <text class="product-title">{{conversation.itemTitle}}</text>
-      <text class="product-price" wx:if="{{conversation.itemPrice > 0}}">NZ$ {{conversation.itemPriceText || conversation.itemPrice}}</text>
-      <text class="product-price" wx:else>免费</text>
+      <text class="product-price">{{conversation.campusPrice}}</text>
     </view>
-    <text class="seller-name">{{peerLabel}}：{{peerName}}</text>
+    <text class="seller-name">{{peerLabel}}：{{peerName}}</text><text wx:if="{{conversation.itemId}}" class="chat-chevron">›</text>
   </view>
 
   <scroll-view class="chat-messages" scroll-y scroll-into-view="{{toView}}" scroll-with-animation>
@@ -40,6 +39,7 @@
     >{{item}}</text>
   </scroll-view>
 
+  <text wx:if="{{sendError}}" class="chat-error" aria-live="polite">{{sendError}}，可重新发送</text>
   <view class="chat-composer">
     <input
       class="chat-input"
@@ -57,4 +57,4 @@
     <button class="send-btn" bindtap="onSend" disabled="{{!inputValue || sending}}">{{sending ? '发送中' : '发送'}}</button>
   </view>
 </view>
-<view class="chat-loading" wx:if="{{loading && !conversation}}">正在读取会话…</view>
+<view class="chat-loading" wx:if="{{!conversation}}"><text>{{loading ? '正在读取会话…' : errorText}}</text><button wx:if="{{!loading && errorText}}" class="campus-secondary" bindtap="retryConversation">重新加载</button></view>

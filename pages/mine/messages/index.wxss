@@ -39,3 +39,8 @@ page { background:#F4F6F8; }
 .empty-title { margin-top:26rpx; font-size:29rpx; color:#3E4652; font-weight:600; }
 .empty-text { margin-top:10rpx; font-size:23rpx; color:#9AA1AC; text-align:center; }
 .empty-retry { margin-top:24rpx; padding:12rpx 28rpx; border-radius:28rpx; background:#EAF3FF; color:#397FD6; font-size:24rpx; }
+
+.message-page { padding: 12px 16px 24px; } .message-summary { background: #215B98; border-radius: 16px; }
+.message-card { min-height: 72px; border: 1px solid #D9E3EA; border-radius: 16px; } .message-tab,.read-all,.empty-retry { min-height: 44px; line-height: 44px; }
+.inbox-badge { padding: 2px 6px; border-radius: 12px; font-size: 12px; color: #fff; background: #A6363D; }
+.message-title { color: #172E43; } .message-preview,.message-time { color: #526778; }

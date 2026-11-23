@@ -47,6 +47,7 @@ function buildMessageView(data, filter) {
       preview: entry.lastMessage || '开始聊天',
       timestamp: entry.updatedAt,
       timeText: timeFormat.formatRelativeTime(entry.updatedAt),
+      unreadCount: Math.max(0, Number(isSeller ? entry.unreadForSeller : entry.unreadForBuyer) || 0),
       read: isSeller ? !(entry.unreadForSeller > 0) : !(entry.unreadForBuyer > 0),
       itemId: entry.itemId,
       itemType: entry.itemType,
@@ -146,6 +147,8 @@ Page({
     }
   },
 
+  openMarket() { wx.switchTab({ url: '/pages/market/list/list' }); },
+  retryInbox() { this.refreshMessages(false); },
   onTabTap(e) {
     const currentTab = e.currentTarget.dataset.key;
     const view = buildMessageView(this._allMessageData || { conversations: [], notifications: [] }, currentTab);

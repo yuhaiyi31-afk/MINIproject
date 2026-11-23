@@ -291,3 +291,6 @@
 .section-header { padding: 0 16px; min-height: 48px; display: flex; align-items: center; }
 .search-area { padding: 0 16px; background: transparent; } .search-bar { min-height: 48px; border: 1px solid #D9E3EA; border-radius: 12px; }
 .kingkong-section { margin: 0 16px; border-radius: 16px; background: #fff; }
+
+.home-logo { width: 37px; height: 37px; margin-right: 9px; border-radius: 10px; } .home-brand .campus-muted { margin-left: auto; }
+.search-panel-content { top: 110px; }
