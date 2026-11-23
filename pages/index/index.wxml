@@ -1,27 +1,16 @@
 <import src="../../templates/listing-card.wxml" />
-<view class="home-brand"><image class="home-logo" src="/assets/branding/mini-program-avatar.png" mode="aspectFit" /><text class="campus-h1">奥大小助手</text><text class="campus-muted">奥克兰 · 新西兰</text></view>
-<!-- 搜索框 -->
-<view class="search-area">
-  <view class="search-bar {{showSearchPanel ? 'search-bar-active' : ''}}">
-    <text class="search-icon">搜</text>
-    <input class="search-input"
-           placeholder="搜索商品、服务或发布者"
-           placeholder-class="search-placeholder"
-           value="{{searchKeyword}}"
-           maxlength="30"
-           cursor-spacing="20"
-           bindinput="onSearchInput"
-           bindfocus="onSearchFocus"
-           bindconfirm="onSearchConfirm"
-           confirm-type="search" />
-    <view class="search-clear" wx:if="{{searchKeyword}}" catchtap="onClearSearch">
-      <text>✕</text>
+<view class="discovery">
+  <view class="safety-line" bindtap="onOpenSafety" aria-role="button"><text class="safety-mark">!</text><text class="safety-copy">交易安全 · 平台不代收款，请当面验货</text><text class="safety-arrow">›</text></view>
+  <view class="discover-inner">
+    <view class="discover-search">
+      <view class="catalog-search">
+        <view class="catalog-loupe"><view class="catalog-loupe-stem"></view></view>
+        <input class="catalog-field" placeholder="搜索商品或生活服务" value="{{searchKeyword}}" maxlength="60" bindinput="onSearchInput" bindfocus="onSearchFocus" bindconfirm="onSearchConfirm" confirm-type="search" />
+        <text class="catalog-submit" aria-role="button" bindtap="onSearchConfirm">搜索</text>
+      </view>
+      <view wx:if="{{showSearchPanel}}" class="search-dismiss" bindtap="onCancelSearch">取消搜索</view>
     </view>
-  </view>
-  <text class="search-cancel" wx:if="{{showSearchPanel}}" catchtap="onCancelSearch">取消</text>
-</view>
-
-<!-- 搜索联想 / 热门搜索 -->
+    <!-- 搜索联想 / 热门搜索 -->
 <view class="search-panel" wx:if="{{showSearchPanel}}">
   <view class="search-panel-mask" catchtap="onCloseSearchPanel"></view>
   <view class="search-panel-content">
@@ -55,37 +44,23 @@
     </block>
   </view>
 </view>
-
-
-<view class="campus-entry home-entry" bindtap="onKingkongTap" data-type="secondhand" aria-role="button">
-  <view><text class="campus-entry-title">二手集市</text><text class="campus-entry-note">逛同城好物，联系卖家</text></view><text class="campus-entry-arrow">›</text>
-</view>
-<view class="section-header"><text class="campus-h2">校园生活</text></view>
-<view class="kingkong-section">
-  <view class="kingkong-row">
-    <view class="kingkong-item" wx:for="{{kingkongRow1}}" wx:key="id" bindtap="onKingkongTap" data-type="{{item.type}}">
-      <view class="kingkong-icon" style="background: {{item.bgColor}};">
-        <image class="kingkong-icon-image" src="{{item.iconPath}}" mode="aspectFit"></image>
-      </view>
-      <text class="kingkong-text">{{item.name}}</text>
+    <view class="discovery-heading"><text class="discovery-title">校园生活</text><text class="discovery-place">奥克兰 · 新西兰</text></view>
+    <view class="shortcuts">
+      <view class="shortcut-cell" wx:for="{{kingkongRow1}}" wx:key="id" bindtap="onKingkongTap" data-type="{{item.type}}" aria-role="button" aria-label="{{item.name}}">
+          <view class="shortcut-badge" style="background-color: {{item.bgColor}}"><image class="shortcut-image" src="{{item.iconPath}}" mode="aspectFit" /></view><text class="shortcut-name">{{item.name}}</text>
+        </view>
+      <view class="shortcut-cell" wx:for="{{kingkongRow2}}" wx:key="id" bindtap="onKingkongTap" data-type="{{item.type}}" aria-role="button" aria-label="{{item.name}}">
+          <view class="shortcut-badge" style="background-color: {{item.bgColor}}"><image class="shortcut-image" src="{{item.iconPath}}" mode="aspectFit" /></view><text class="shortcut-name">{{item.name}}</text>
+        </view>
     </view>
-  </view>
-  <view class="kingkong-row">
-    <view class="kingkong-item" wx:for="{{kingkongRow2}}" wx:key="id" bindtap="onKingkongTap" data-type="{{item.type}}">
-      <view class="kingkong-icon" style="background: {{item.bgColor}};">
-        <image class="kingkong-icon-image" src="{{item.iconPath}}" mode="aspectFit"></image>
-      </view>
-      <text class="kingkong-text">{{item.name}}</text>
-    </view>
+    <view class="discovery-heading"><text class="discovery-title">最新商品</text><text class="discovery-link" aria-role="button" bindtap="onKingkongTap" data-type="secondhand">逛集市 ›</text></view>
+    <view class="feed-grid" wx:if="{{displayList.length}}"><view class="feed-cell" wx:for="{{displayList}}" wx:key="itemKey" bindtap="onInfoTap" data-item="{{item}}" aria-role="button">
+      <template is="listing-card" data="{{item, coverFailed: failedCovers[item.itemKey]}}" />
+    </view></view>
+    <view wx:else class="home-state campus-panel"><text class="campus-muted">{{feedLoading ? '正在加载商品…' : (feedError || (searchEmpty ? '没有找到相关商品' : '暂时没有在售商品'))}}</text>
+      <button wx:if="{{feedError}}" class="campus-secondary" bindtap="retryFeed">重新加载</button></view>
+    <view class="discovery-heading"><text class="discovery-title">热门服务</text><text class="discovery-link" aria-role="button" bindtap="onKingkongTap" data-type="local">全部服务 ›</text></view>
+    <view class="popular-services"><view class="popular-link" wx:for="{{hotServices}}" wx:key="id" data-type="{{item.type}}" bindtap="onHotServiceTap" aria-role="button"><text class="popular-label">{{item.title}} ›</text></view></view>
+    <view class="discover-actions"><text class="discovery-link" aria-role="button" bindtap="openPublish">发布商品</text><text class="discovery-link" aria-role="button" bindtap="openMessages">交易消息</text></view>
   </view>
 </view>
-
-
-<view class="section-header flex-between"><text class="campus-h2">最新商品</text><text class="home-link" bindtap="onKingkongTap" data-type="secondhand">查看全部 ›</text></view>
-<view class="listing-grid" wx:if="{{displayList.length}}"><view wx:for="{{displayList}}" wx:key="itemKey" bindtap="onInfoTap" data-item="{{item}}" aria-role="button">
-  <template is="listing-card" data="{{item, coverFailed: failedCovers[item.itemKey]}}" />
-</view></view>
-<view wx:else class="home-state campus-panel"><text class="campus-muted">{{feedLoading ? '正在加载商品…' : (feedError || (searchEmpty ? '没有找到相关商品' : '暂时没有在售商品'))}}</text>
-  <button wx:if="{{feedError}}" class="campus-secondary" bindtap="retryFeed">重新加载</button>
-</view>
-<view class="home-safety" bindtap="onOpenSafety"><text class="campus-muted">交易安全 · 平台不代收款，请当面验货</text><text class="home-link">查看指南 ›</text></view>

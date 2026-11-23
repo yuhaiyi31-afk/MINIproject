@@ -21,7 +21,7 @@ Page({
       { id: 1, iconPath: '/assets/icons/home/pickup.svg', name: '接机', type: 'pickup', bgColor: '#EAF3FF' },
       { id: 2, iconPath: '/assets/icons/home/moving.svg', name: '搬家', type: 'moving', bgColor: '#FFF2E8' },
       { id: 3, iconPath: '/assets/icons/home/job.svg', name: '找工', type: 'job', bgColor: '#F0EEFF' },
-      { id: 4, iconPath: '/assets/icons/home/secondhand.svg', name: '二手', type: 'secondhand', bgColor: '#FFECEF' }
+      { id: 4, iconPath: '/assets/icons/home/secondhand.svg', name: '二手集市', type: 'secondhand', bgColor: '#FFECEF' }
     ],
     kingkongRow2: [
       { id: 5, iconPath: '/assets/icons/home/rent.svg', name: '租房', type: 'rent', bgColor: '#EFEEFF' },
@@ -32,7 +32,7 @@ Page({
     hotServices: [
       { id: 1, type: 'pickup', icon: '✈️', title: '机场接送', desc: '安全准时', bgColor: '#E8F4FD' },
       { id: 2, type: 'moving', icon: '🚚', title: '学生搬家', desc: '价格实惠', bgColor: '#FFF3E8' },
-      { id: 3, type: 'job', icon: '💼', title: '兼职推荐', desc: '靠谱岗位', bgColor: '#E8F8E8' }
+      { id: 3, type: 'job', icon: '💼', title: '兼职找工', desc: '靠谱岗位', bgColor: '#E8F8E8' }
     ],
     infoList: []
   },
@@ -64,7 +64,7 @@ Page({
     const infoList = rows.map(item => ({ ...item, campusPrice: formatMarketPrice(item.price) }));
     this._marketLoaded = true;
     this._lastMarketRefreshAt = Date.now();
-    this.setData({ failedCovers: {}, feedError: '', infoList, displayList: infoList.slice(0, 6), searchEmpty: false });
+    this.setData({ failedCovers: {}, feedError: '', infoList, displayList: infoList.slice(0, 4), searchEmpty: false });
     getApp().globalData._infoItems = infoList;
     this.genRec();
   },
@@ -128,7 +128,7 @@ Page({
   },
 
   onSearchConfirm(e) {
-    const kw = (e.detail.value || this.data.searchKeyword).trim();
+    const kw = ((e.detail && e.detail.value) || this.data.searchKeyword).trim();
     if (!kw) return;
     this.setData({ showSearchPanel: false }); this.saveH(kw);
     wx.hideKeyboard();
@@ -190,6 +190,8 @@ Page({
     getApp().globalData.helpTabType = type;
     wx.switchTab({ url: '/pages/help/index/index' });
   },
+  openPublish() { wx.navigateTo({ url: '/pages/publish/index' }); },
+  openMessages() { wx.navigateTo({ url: '/pages/mine/messages/index' }); },
   onInfoTap(e) {
     itemRouter.navigateToDetail(e.currentTarget.dataset.item);
   },

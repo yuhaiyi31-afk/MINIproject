@@ -1,4 +1,6 @@
 {
-  "navigationBarTitleText": "集市",
-  "enablePullDownRefresh": true
+  "navigationBarTitleText": "奥大小助手",
+  "enablePullDownRefresh": true,
+  "navigationBarBackgroundColor": "#215B98",
+  "navigationBarTextStyle": "white"
 }
