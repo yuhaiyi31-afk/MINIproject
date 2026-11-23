@@ -1,0 +1,41 @@
+<view class="page">
+  <label class="label" for="env">CloudBase 测试环境 ID</label>
+  <input id="env" class="input" value="{{environmentId}}" disabled="{{busy}}" bindinput="onEnvironmentInput" />
+  <button type="primary" disabled="{{busy}}" bindtap="loadList">读取在售商品</button>
+  <view class="message" wx:if="{{loaded && !items.length}}">测试环境没有在售商品</view>
+  <button class="listing" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" disabled="{{busy}}" bindtap="chooseItem">{{item.title}} · NZ$ {{item.priceCents / 100}}</button>
+
+  <label class="label" for="item">商品 ID</label>
+  <input id="item" class="input" value="{{itemId}}" disabled="{{busy}}" bindinput="onItemInput" />
+  <button disabled="{{busy}}" bindtap="loadItem">核对商品详情</button>
+  <button disabled="{{busy}}" bindtap="openTrade">交易联调</button>
+  <view class="message" wx:if="{{busy}}">正在读取测试环境…</view>
+  <view class="error" wx:if="{{error}}">{{error}}</view>
+  <view class="result" wx:if="{{detail}}">
+    <text selectable>{{detail.id}}</text>
+    <text wx:if="{{detail.status === 'SOLD'}}">已售</text>
+    <block wx:else>
+      <text>{{detail.title}} · 在售 · NZ$ {{detail.price}}</text>
+      <text>{{detail.description}}</text>
+      <image wx:for="{{detail.images}}" wx:key="fileId" src="{{item.url}}" data-url="{{item.url}}" mode="aspectFit" bindload="photoLoaded" binderror="photoFailed" />
+    </block>
+    <button bindtap="copyEvidence">复制验收结果</button>
+  </view>
+  <view class="result">
+    <label class="label">服务大厅</label>
+    <picker range="{{categories}}" disabled="{{busy}}" bindchange="selectServiceCategory"><view class="input">{{serviceCategory}}</view></picker>
+    <button wx:if="{{!serviceLoaded || servicePage}}" disabled="{{busy}}" bindtap="loadServices">{{serviceLoaded ? '加载更多服务' : '浏览服务'}}</button>
+    <button disabled="{{busy}}" bindtap="openPublishService">发布和管理我的服务</button>
+    <view class="message" wx:if="{{serviceLoaded && !services.length}}">暂无此分类的服务</view>
+    <button class="listing" wx:for="{{services}}" wx:key="id" data-id="{{item.id}}" disabled="{{busy}}" bindtap="showService">{{item.title}} · NZ$ {{item.price}}</button>
+    <block wx:if="{{serviceDetail}}">
+      <text wx:if="{{serviceDetail.status === 'SOLD'}}">这条服务已结束</text>
+      <block wx:else>
+        <text>{{serviceDetail.title}} · NZ$ {{serviceDetail.price}}</text>
+        <text>{{serviceDetail.description}}</text>
+        <image wx:for="{{serviceDetail.images}}" wx:key="fileId" src="{{item.url}}" mode="aspectFit" />
+        <button bindtap="openServiceTrade">联系发布者或举报</button>
+      </block>
+    </block>
+  </view>
+</view>

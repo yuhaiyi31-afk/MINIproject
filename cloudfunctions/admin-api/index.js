@@ -230,10 +230,7 @@ async function submitReport(input, openid) {
   };
   try {
     const existing = await db.collection(REPORTS).doc(reportId).get();
-    if (existing && existing.data) {
-      report.createdAtMs = number(existing.data.createdAtMs) || now;
-      report.createdAt = existing.data.createdAt || db.serverDate();
-    }
+    if (existing && existing.data) return reportId;
   } catch (error) {
     if (!isMissing(error)) throw error;
   }
@@ -286,10 +283,7 @@ async function submitUserReport(input, openid) {
     updatedAt: db.serverDate()
   };
   const existing = await getDocument(REPORTS, reportId);
-  if (existing) {
-    report.createdAtMs = number(existing.createdAtMs) || now;
-    report.createdAt = existing.createdAt || db.serverDate();
-  }
+  if (existing) return reportId;
   try {
     await db.collection(REPORTS).doc(reportId).set({ data: report });
   } catch (error) {

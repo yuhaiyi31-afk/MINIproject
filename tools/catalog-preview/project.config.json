@@ -1,0 +1,8 @@
+{
+  "appid": "touristappid",
+  "compileType": "miniprogram",
+  "libVersion": "3.17.0",
+  "miniprogramRoot": "miniprogram/",
+  "projectname": "market-catalog-preview",
+  "setting": { "es6": true }
+}

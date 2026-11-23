@@ -1,0 +1,47 @@
+<view class="page">
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+  <view wx:if="{{!ready}}"><button disabled="{{busy}}" bindtap="initialize">{{service ? '读取我的服务' : '读取我的商品'}}</button></view>
+  <block wx:elif="{{form}}">
+    <view class="heading">{{form.id ? '编辑' : '发布'}}{{service ? '服务' : '商品'}}</view>
+    <label>标题</label>
+    <input class="input" data-field="title" value="{{form.title}}" maxlength="80" disabled="{{busy}}" bindinput="enterField" />
+    <label>描述</label>
+    <textarea class="input description" data-field="description" value="{{form.description}}" maxlength="1000" disabled="{{busy}}" bindinput="enterField" />
+    <label>价格（NZD）</label>
+    <input class="input" data-field="price" value="{{form.price}}" type="digit" disabled="{{busy}}" bindinput="enterField" />
+    <picker data-field="category" range="{{service ? options.serviceCategories : options.categories}}" disabled="{{busy}}" bindchange="selectOption"><view class="input">{{form.category || '选择分类'}}</view></picker>
+    <block wx:if="{{!service}}">
+      <picker data-field="condition" range="{{options.conditions}}" disabled="{{busy}}" bindchange="selectOption"><view class="input">{{form.condition || '选择成色'}}</view></picker>
+      <picker data-field="region" range="{{options.regions}}" disabled="{{busy}}" bindchange="selectOption"><view class="input">{{form.region || '选择大致区域'}}</view></picker>
+      <picker data-field="deliveryMethod" range="{{options.deliveryMethods}}" disabled="{{busy}}" bindchange="selectOption"><view class="input">{{form.deliveryMethod || '选择交付方式'}}</view></picker>
+    </block>
+    <view class="photos">
+      <view class="photo" wx:for="{{photos}}" wx:key="uploadId">
+        <image src="{{item.localPath}}" mode="aspectFill" />
+        <button data-index="{{index}}" disabled="{{busy}}" bindtap="removePhoto">移除</button>
+      </view>
+    </view>
+    <view wx:if="{{form.imageCount && !photos.length}}">保留原有 {{form.imageCount}} 张图片</view>
+    <button wx:if="{{photos.length < 9}}" disabled="{{busy}}" bindtap="choosePhotos">{{form.imageCount && !photos.length ? '更换全部图片' : '添加照片'}}</button>
+    <view wx:if="{{!form.id}}" class="promise">提交即确认商品信息真实、来源合法。</view>
+    <button type="primary" loading="{{busy}}" disabled="{{busy}}" bindtap="submit">{{form.id ? '保存修改' : '确认发布'}}</button>
+    <button disabled="{{busy}}" bindtap="closeEditor">保存草稿并返回</button>
+    <button disabled="{{busy}}" bindtap="discardDraft">放弃草稿</button>
+  </block>
+  <block wx:else>
+    <button type="primary" disabled="{{busy}}" bindtap="newItem">{{service ? '发布服务' : '发布商品'}}</button>
+    <view wx:if="{{lastItemId}}" class="notice">发布编号 {{lastItemId}}</view>
+    <view wx:for="{{items}}" wx:key="id" class="panel">
+      <text class="heading">{{item.title}}</text>
+      <view>NZ$ {{item.price}} · {{item.statusLabel}}</view>
+      <button data-id="{{item.id}}" bindtap="copyItemId">复制商品 ID</button>
+      <button wx:if="{{item.editable}}" data-id="{{item.id}}" disabled="{{busy}}" bindtap="edit">编辑</button>
+      <button wx:if="{{item.status === 'ACTIVE'}}" data-id="{{item.id}}" data-next="UNLISTED" disabled="{{busy}}" bindtap="setStatus">下架</button>
+      <button wx:if="{{item.status === 'ACTIVE' || item.status === 'UNLISTED'}}" data-id="{{item.id}}" data-next="SOLD" disabled="{{busy}}" bindtap="setStatus">{{service ? '结束服务' : '标记已售'}}</button>
+      <button wx:if="{{item.status === 'UNLISTED' || item.status === 'SOLD'}}" data-id="{{item.id}}" data-next="ACTIVE" disabled="{{busy}}" bindtap="setStatus">重新上架</button>
+      <button wx:if="{{item.editable}}" data-id="{{item.id}}" data-next="DELETED" disabled="{{busy}}" bindtap="setStatus">删除</button>
+    </view>
+    <view wx:if="{{!busy && !items.length}}">{{service ? '暂无服务' : '暂无商品'}}</view>
+    <button wx:if="{{hasMore}}" disabled="{{busy}}" bindtap="loadMore">加载更多</button>
+  </block>
+</view>

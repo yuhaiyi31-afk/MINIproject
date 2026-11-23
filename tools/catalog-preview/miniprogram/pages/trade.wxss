@@ -1,0 +1,7 @@
+.page { min-height: 100vh; background: #f3f7fb; padding: 24rpx; }
+.panel { background: white; border-radius: 20rpx; padding: 20rpx; margin-bottom: 20rpx; }
+.heading { font-weight: 600; margin-bottom: 16rpx; }
+.input { border: 1px solid #d6e0e8; border-radius: 12rpx; min-height: 72rpx; padding: 0 12rpx; }
+button { margin: 12rpx 0; }
+.message { padding: 8rpx 0; }
+.notice { padding: 12rpx 0 24rpx; color: #28455f; }
