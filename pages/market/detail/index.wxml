@@ -67,7 +67,7 @@
     <view class="price-row">
       <text class="detail-price campus-detail-amount">{{item.campusPrice}}</text>
       <view class="product-pills">
-        <text class="status-pill {{item.status}}">{{item.status === 'reserved' ? '已预留' : item.status === 'sold' ? '已售' : (item.status === 'unlisted' ? '已下架' : (item.status === 'suspended' ? '平台暂停' : '在售'))}}</text>
+        <text class="status-pill {{item.status}}">{{item.status === 'reserved' ? '已预留' : item.status === 'sold' ? '已售' : (item.status === 'unlisted' ? '已下架' : (item.status === 'suspended' ? '平台暂停' : (item.status === 'active' ? (item.itemType === 'service' ? '可咨询' : '在售') : '状态待确认')))}}</text>
         <text class="category-pill" wx:if="{{item.category}}">{{item.category}}</text>
       </view>
     </view>

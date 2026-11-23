@@ -31,7 +31,7 @@ Page({
 
   onCoverError(e) {
     const key = e.currentTarget.dataset.key;
-    if (key) this.setData({ failedCovers: { ...this.data.failedCovers, [key]: true } });
+    if (key) this.setData({ failedCovers: { ...this.data.failedCovers, [key]: e.currentTarget.dataset.retry ? 1 : 2 } });
   },
 
   onLoad() {

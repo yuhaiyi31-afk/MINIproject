@@ -1,4 +1,4 @@
-<view class="services-header"><view class="services-heading"><text class="campus-h1">服务大厅</text><button class="campus-primary" bindtap="onPublishTap">发布服务</button></view>
+<view class="services-header"><view class="services-heading"><text class="campus-h1">按需求找服务</text><button class="campus-primary" bindtap="onPublishTap">发布服务</button></view>
 <view class="service-groups"><view class="service-group {{index === 1 ? 'service-group-middle' : ''}}" wx:for="{{groups}}" wx:key="label" bindtap="chooseGroup" data-index="{{index}}" aria-role="button">
   <image class="service-group-icon" src="/assets/icons/home/{{item.icon}}.svg" mode="aspectFit"/><text class="service-group-label">{{item.label}}</text><text class="service-group-detail">{{item.detail}}</text>
 </view></view></view>
