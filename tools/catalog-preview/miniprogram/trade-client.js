@@ -3,7 +3,7 @@
 const { testEnvironment } = require('./catalog-client');
 const ACTIONS = new Set([
   'identity.status', 'identity.start', 'identity.confirm', 'items.markSold',
-  'items.options', 'items.mine', 'items.getOwned', 'items.publish', 'items.edit', 'items.transition', 'media.upload',
+  'items.options', 'items.mine', 'items.getOwned', 'items.publish', 'items.publishStatus', 'items.edit', 'items.transition', 'media.upload',
   'favorites.get', 'favorites.set', 'favorites.list', 'chat.list', 'chat.ensure', 'chat.get', 'chat.send', 'chat.markRead',
   'notifications.list', 'notifications.markRead'
 ]);

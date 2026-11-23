@@ -13,6 +13,7 @@
 | `items.options`、`items.mine`、`items.getOwned` | 读取共用发布选项、我的商品和卖家编辑所需的商品版本。 |
 | `media.upload` | 发送一张压缩后的图片。输入包含 `requestId` 和 `imageBase64`，返回当前卖家的 `assetId`。 |
 | `items.publish`、`items.edit` | 发布或编辑 `market_items`。接受 `title`、`description`、`price`、`category`、`condition`、`region`、`deliveryMethod`。发布还需 `requestId`、`promiseReal` 和 `photoAssetIds`。编辑提交 `itemId`、`revision` 和 `requestId`，省略 `photoAssetIds` 时保留原图。 |
+| `items.publishStatus` | 当前卖家用原 `requestId` 查询发布结果。返回 `{ item }`，其中 `item` 是自己已提交的商品或 `null`。App 在提交回包丢失后先查询此接口。 |
 | `items.transition`、`items.markSold` | 卖家下架、重新上架、售出或软删除同一条记录。状态变更使用 `itemId` 和商品版本，售出快捷操作可用 `items.markSold`。 |
 | `favorites.get`、`favorites.set`、`favorites.list` | 读取或设置收藏，按页查询当前用户收藏的在售商品。 |
 | `chat.list`、`chat.ensure`、`chat.get` | 按页查看自己的会话，按商品打开会话，从当前页读取更早或更新的消息。 |

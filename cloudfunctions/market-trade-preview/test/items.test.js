@@ -119,6 +119,22 @@ test('publication rejects forged, foreign, reused and expired photos and private
   assert.equal(f.rows(collections.items).filter(row => row.submissionHash).length, 1);
 });
 
+test('only the owner can recover a publication by its original request ID', async () => {
+  const f = fixture();
+  const seller = f.handler('wx', SELLER);
+  const request = { requestId: 'pending-publication' };
+  assert.deepEqual(await success(seller, 'items.publishStatus', request), { item: null });
+  await denied(f.handler(null), 'items.publishStatus', request, 'AUTH_REQUIRED');
+  await denied(f.handler('app', APP), 'items.publishStatus', request, 'LINK_REQUIRED');
+  await denied(seller, 'items.publishStatus', { requestId: 'wrong / id' }, 'INVALID_ID');
+  const { item } = await publish(seller, request.requestId);
+  assert.deepEqual(await success(seller, 'items.publishStatus', request), { item });
+  assert.deepEqual(await success(f.handler('wx', BUYER), 'items.publishStatus', request), { item: null });
+  const sold = await success(seller, 'items.transition', { itemId: item.id, revision: item.revision, status: 'SOLD' });
+  assert.deepEqual(await success(seller, 'items.publishStatus', request), { item: sold });
+  assert.equal(f.rows(collections.items).filter(row => row.submissionHash).length, 1);
+});
+
 test('publication, text edits, image edits and visibility changes use the same ID throughout', async () => {
   const f = fixture();
   const seller = f.handler('wx', SELLER);

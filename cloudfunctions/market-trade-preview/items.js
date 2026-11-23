@@ -89,6 +89,10 @@ function photoIds(input) {
   return input;
 }
 
+function publishedItemId(openId, requestId) {
+  return `item_${createHash('sha256').update(`${openId}:${requestId}`).digest('hex').slice(0, 40)}`;
+}
+
 function createItemActions({ account, now, mediaRoot }) {
   async function owned(tx, principal, itemId) {
     const { openId } = await account(tx, principal);
@@ -145,6 +149,14 @@ function createItemActions({ account, now, mediaRoot }) {
   return {
     'items.getOwned': async (tx, principal, input) => ownerItem(await owned(tx, principal, itemKey(input.itemId))),
 
+    'items.publishStatus': async (tx, principal, input) => {
+      const { openId } = await account(tx, principal);
+      const requestId = id(input.requestId);
+      const item = await tx.get(collections.items, publishedItemId(openId, requestId));
+      const ownedPublish = item?.ownerOpenId === openId && item?.clientRequestId === requestId && item?.publishType === 'market';
+      return { item: ownedPublish ? ownerItem(item) : null };
+    },
+
     'items.publish': async (tx, principal, input) => {
       const { openId, profile } = await account(tx, principal);
       const requestId = id(input.requestId);
@@ -153,7 +165,7 @@ function createItemActions({ account, now, mediaRoot }) {
       check(input.promiseReal === true, 'ITEM_CONFIRMATION', '请确认商品信息真实、来源合法');
       const submissionHash = hash(fields, ids);
       // Match the legacy WeChat publish ID for this owner and request.
-      const itemId = `item_${createHash('sha256').update(`${openId}:${requestId}`).digest('hex').slice(0, 40)}`;
+      const itemId = publishedItemId(openId, requestId);
       const existing = await tx.get(collections.items, itemId);
       if (existing) {
         check(existing.ownerOpenId === openId && existing.submissionHash === submissionHash,
