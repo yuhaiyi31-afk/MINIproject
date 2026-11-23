@@ -55,7 +55,7 @@
     </view>
     <view class="discovery-heading"><text class="discovery-title">最新商品</text><text class="discovery-link" aria-role="button" bindtap="onKingkongTap" data-type="secondhand">逛集市 ›</text></view>
     <view class="feed-grid" wx:if="{{displayList.length}}"><view class="feed-cell" wx:for="{{displayList}}" wx:key="itemKey" bindtap="onInfoTap" data-item="{{item}}" aria-role="button">
-      <template is="listing-card" data="{{item, coverFailed: failedCovers[item.itemKey]}}" />
+      <template is="listing-card" data="{{item, coverFailed: failedCovers[item.itemKey], coverLoaded: loadedCovers[item.itemKey]}}" />
     </view></view>
     <view wx:else class="home-state campus-panel"><text class="campus-muted">{{feedLoading ? '正在加载商品…' : (feedError || (searchEmpty ? '没有找到相关商品' : '暂时没有在售商品'))}}</text>
       <button wx:if="{{feedError}}" class="campus-secondary" bindtap="retryFeed">重新加载</button></view>

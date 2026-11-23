@@ -90,7 +90,7 @@ function formatTime(timestamp) {
   if (diff < day) return `${Math.floor(diff / hour)}小时前`;
   if (diff < day * 7) return `${Math.floor(diff / day)}天前`;
   const date = new Date(value);
-  return `${date.getMonth() + 1}月${date.getDate()}日`;
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
 function normalizeItem(item) {

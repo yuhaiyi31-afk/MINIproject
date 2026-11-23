@@ -1,8 +1,8 @@
 <template name="listing-card">
   <view class="listing-card">
     <view class="listing-media">
-      <view class="listing-empty"><view class="listing-camera"><view class="listing-lens"></view></view><text class="listing-placeholder">{{coverFailed === 2 ? '图片暂不可用' : ((item.thumbnail || (item.images && item.images.length)) ? '正在加载照片…' : '暂无可用照片')}}</text></view>
-      <image wx:if="{{coverFailed !== 2 && ((item.thumbnail && !coverFailed) || (item.images && item.images.length))}}" class="listing-cover" src="{{(!coverFailed && item.thumbnail) || item.images[0]}}" mode="aspectFill" lazy-load binderror="onCoverError" data-key="{{item.itemKey}}" data-retry="{{!coverFailed && item.thumbnail && item.images && item.images[0] && item.images[0] !== item.thumbnail}}" />
+      <view wx:if="{{coverFailed === 2 || !coverLoaded || coverLoaded !== ((!coverFailed && item.thumbnail) || (item.images && item.images[0]))}}" class="listing-empty"><view class="listing-camera"><view class="listing-lens"></view></view><text class="listing-placeholder">{{coverFailed === 2 ? '图片暂不可用' : ((item.thumbnail || (item.images && item.images.length)) ? '正在加载照片…' : '暂无可用照片')}}</text></view>
+      <image wx:if="{{coverFailed !== 2 && ((item.thumbnail && !coverFailed) || (item.images && item.images.length))}}" class="listing-cover" src="{{(!coverFailed && item.thumbnail) || item.images[0]}}" mode="aspectFill" lazy-load data-src="{{(!coverFailed && item.thumbnail) || (item.images && item.images[0])}}" bindload="onCoverLoad" binderror="onCoverError" data-key="{{item.itemKey}}" data-retry="{{!coverFailed && item.thumbnail && item.images && item.images[0] && item.images[0] !== item.thumbnail}}" />
       <text wx:if="{{item.status === 'sold' || item.status === 'reserved' || item.status === 'unlisted' || item.status === 'suspended'}}" class="listing-status">{{item.status === 'sold' ? '已售' : item.status === 'reserved' ? '已预留' : item.status === 'unlisted' ? '已下架' : '平台暂停'}}</text>
     </view>
     <view class="listing-body">

@@ -9,6 +9,7 @@ const PAGE_SIZE = 12;
 Page({
   data: {
     failedCovers: {},
+    loadedCovers: {},
     keyword: '',
     showFilter: false,
     filterActive: false,
@@ -29,9 +30,16 @@ Page({
     emptyText: '暂无真实发布'
   },
 
+  onCoverLoad(e) {
+    const key = e.currentTarget.dataset.key;
+    if (key) this.setData({ loadedCovers: { ...this.data.loadedCovers, [key]: e.currentTarget.dataset.src } });
+  },
   onCoverError(e) {
     const key = e.currentTarget.dataset.key;
-    if (key) this.setData({ failedCovers: { ...this.data.failedCovers, [key]: e.currentTarget.dataset.retry ? 1 : 2 } });
+    if (key) this.setData({
+      failedCovers: { ...this.data.failedCovers, [key]: e.currentTarget.dataset.retry ? 1 : 2 },
+      loadedCovers: { ...this.data.loadedCovers, [key]: false }
+    });
   },
 
   onLoad() {
@@ -85,6 +93,7 @@ Page({
       loading: false,
       loadFailed: false,
       failedCovers: reset ? {} : this.data.failedCovers,
+      loadedCovers: Object.fromEntries(items.filter(item => this.data.loadedCovers[item.itemKey]).map(item => [item.itemKey, this.data.loadedCovers[item.itemKey]])),
       emptyText: items.length ? '' : '没有找到符合条件的在售商品'
     });
     getApp().globalData._allItems = items;

@@ -7,6 +7,7 @@ const FEED_REFRESH_INTERVAL = 60 * 1000;
 Page({
   data: {
     failedCovers: {},
+    loadedCovers: {},
     searchKeyword: '',
     showSearchPanel: false,
     suggestions: [],
@@ -37,9 +38,16 @@ Page({
     infoList: []
   },
 
+  onCoverLoad(e) {
+    const key = e.currentTarget.dataset.key;
+    if (key) this.setData({ loadedCovers: { ...this.data.loadedCovers, [key]: e.currentTarget.dataset.src } });
+  },
   onCoverError(e) {
     const key = e.currentTarget.dataset.key;
-    if (key) this.setData({ failedCovers: { ...this.data.failedCovers, [key]: e.currentTarget.dataset.retry ? 1 : 2 } });
+    if (key) this.setData({
+      failedCovers: { ...this.data.failedCovers, [key]: e.currentTarget.dataset.retry ? 1 : 2 },
+      loadedCovers: { ...this.data.loadedCovers, [key]: false }
+    });
   },
 
   onLoad() {
@@ -64,7 +72,7 @@ Page({
     const infoList = rows.map(item => ({ ...item, campusPrice: formatMarketPrice(item.price) }));
     this._marketLoaded = true;
     this._lastMarketRefreshAt = Date.now();
-    this.setData({ failedCovers: {}, feedError: '', infoList, displayList: infoList.slice(0, 4), searchEmpty: false });
+    this.setData({ failedCovers: {}, loadedCovers: Object.fromEntries(infoList.filter(item => this.data.loadedCovers[item.itemKey]).map(item => [item.itemKey, this.data.loadedCovers[item.itemKey]])), feedError: '', infoList, displayList: infoList.slice(0, 4), searchEmpty: false });
     getApp().globalData._infoItems = infoList;
     this.genRec();
   },

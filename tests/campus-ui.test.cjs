@@ -73,3 +73,17 @@ test('发布确认可以取消，同一张确认单只提交一次', () => {
   assert.equal(posted.length, 1);
   assert.equal(posted[0].clientRequestId, 'unit-request');
 });
+
+test('重新读取同一商品时，已加载的封面保留就绪状态，错误照片可回退', () => {
+  const page = loadScreen('pages/market/list/list.js', { '../../../utils/market-cloud': {}, '../../../utils/item-router': {} });
+  const item = { itemKey: 'example', title: '商品', price: 2, thumbnail: 'cover', images: ['photo'] };
+  page.applyItems({ items: [item], hasMore: false }, true);
+  page.onCoverLoad({ currentTarget: { dataset: { key: item.itemKey, src: 'cover' } } });
+  page.applyItems({ items: [item], hasMore: false }, true);
+  assert.equal(page.data.loadedCovers.example, 'cover');
+  page.onCoverError({ currentTarget: { dataset: { key: item.itemKey, retry: true } } });
+  assert.equal(page.data.failedCovers.example, 1);
+  assert.equal(page.data.loadedCovers.example, false);
+  page.onCoverLoad({ currentTarget: { dataset: { key: item.itemKey, src: 'photo' } } });
+  assert.equal(page.data.loadedCovers.example, 'photo');
+});

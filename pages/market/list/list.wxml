@@ -46,7 +46,7 @@
   </view>
 </view>
   <view class="catalog-feed" wx:if="{{items.length}}"><view class="feed-grid"><view class="feed-cell" wx:for="{{items}}" wx:key="itemKey" bindtap="onItemTap" data-item="{{item}}" aria-role="button" aria-label="{{item.title}}，{{item.campusPrice}}">
-    <template is="listing-card" data="{{item, coverFailed: failedCovers[item.itemKey]}}" />
+    <template is="listing-card" data="{{item, coverFailed: failedCovers[item.itemKey], coverLoaded: loadedCovers[item.itemKey]}}" />
   </view></view></view>
   <view class="campus-state feed-state" wx:if="{{loading}}"><text class="campus-muted">正在加载商品…</text></view>
 <view class="campus-state feed-state" wx:elif="{{loadFailed || !items.length}}">
