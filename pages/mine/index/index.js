@@ -72,7 +72,7 @@ Page({
 
   applyCachedStats() {
     const cached = wx.getStorageSync('mineStatsCacheV1');
-    if (cached && cached.savedAt && Date.now() - cached.savedAt < 30 * 60 * 1000) {
+    if (this.data.isLoggedIn && cached && cached.savedAt && Date.now() - cached.savedAt < 30 * 60 * 1000) {
       this.setData({ ...cached.value, statsReady: true });
       return true;
     }

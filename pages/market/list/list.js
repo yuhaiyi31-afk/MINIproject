@@ -101,7 +101,7 @@ Page({
       this.applyItems(result, reset);
     } catch (error) {
       if (requestId !== Number(this._requestId || 0)) return;
-      if (background && this.data.items.length) return;
+      if (background && this.data.items.length) { this.setData({ loading: false }); return; }
       this._loaded = true;
       const message = marketCloud.getErrorMessage(error);
       this.setData({ loading: false, loadFailed: true, hasMore: false, items: reset ? [] : this.data.items, emptyText: message });

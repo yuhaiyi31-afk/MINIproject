@@ -149,7 +149,7 @@
       <button class="primary-action owner-relist-action" bindtap="onRelistOwnItem" loading="{{ownerActionBusy}}" disabled="{{ownerActionBusy}}" wx:if="{{item.status === 'unlisted' || item.status === 'sold'}}">重新上架</button>
     </block>
     <block wx:else>
-      <button disabled="{{favoriteBusy || sellerBlocked || item.status !== 'active'}}" class="favorite-action {{isFavorited ? 'favorite-active' : ''}}" bindtap="onToggleFavorite">
+      <button disabled="{{favoriteBusy || sellerBlocked || (item.status && item.status !== 'active')}}" class="favorite-action {{isFavorited ? 'favorite-active' : ''}}" bindtap="onToggleFavorite">
         <text class="favorite-icon">{{isFavorited ? '♥' : '♡'}}</text>
         <text>{{isFavorited ? '已收藏' : '收藏'}}</text>
       </button>

@@ -267,13 +267,11 @@ Page({
       if (!id) throw new Error('服务未返回发布编号，请确认发布结果');
       if (item.publishType === 'service') getApp().globalData.serviceNeedsRefresh = true;
       else getApp().globalData.marketNeedsRefresh = true;
-      wx.hideLoading();
       wx.vibrateShort({ type: 'light' });
       this.setData({ submitting: false, uploadStatus: '' });
       wx.showToast({ title: this.data.isEdit ? '修改成功！' : '发布成功！', icon: 'success', duration: 1500 });
       setTimeout(() => { wx.navigateBack(); }, 1500);
     } catch (error) {
-      wx.hideLoading();
       this._submitInFlight = false;
       this.setData({ submitting: false, uploadStatus: '' });
       wx.showModal({
