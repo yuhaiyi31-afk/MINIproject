@@ -1,6 +1,7 @@
 const PRODUCTION_ENV = 'cloud1-d9glh048lb56b8a00';
 const FUNCTION_NAME = 'market-catalog-api';
 const EVIDENCE_SCHEMA = 'market-catalog-evidence/v1';
+const DEVICE_SCHEMA = 'market-catalog-evidence/v2';
 const ITEM_ID = /^[a-zA-Z0-9_-]{1,100}$/;
 const MAX_PRICE = 90071992547409;
 
@@ -44,6 +45,13 @@ function createWechatCatalog(cloud, value) {
     return result.data;
   }
 
+  async function readItem(itemId, includeEvidence = false) {
+    if (typeof itemId !== 'string' || !ITEM_ID.test(itemId)) throw new Error('填写有效的商品 ID');
+    const data = { action: 'items.get', itemId };
+    if (includeEvidence) data.includeEvidence = true;
+    const item = await invoke(data);
+    return { item, record: evidenceFrom(environmentId, itemId, item) };
+  }
   return {
     async list() {
       const response = await invoke({ action: 'items.browse', sort: 'LATEST', limit: 20 });
@@ -55,8 +63,10 @@ function createWechatCatalog(cloud, value) {
       });
     },
     async get(itemId) {
-      if (typeof itemId !== 'string' || !ITEM_ID.test(itemId)) throw new Error('填写有效的商品 ID');
-      return evidenceFrom(environmentId, itemId, await invoke({ action: 'items.get', itemId }));
+      return (await readItem(itemId)).record;
+    },
+    async detail(itemId, includeEvidence = false) {
+      return (await readItem(itemId, includeEvidence)).item;
     },
     async services(category, cursor = '') {
       const response = await invoke({ action: 'services.browse', category, cursor, limit: 20 });
@@ -70,4 +80,21 @@ function createWechatCatalog(cloud, value) {
   };
 }
 
-module.exports = { createWechatCatalog, testEnvironment, EVIDENCE_SCHEMA };
+function deviceEvidence(environmentId, expectedId, item, loadedUrls) {
+  const record = evidenceFrom(environmentId, expectedId, item);
+  if (!Array.isArray(item.images) || (record.status === 'SOLD' && item.images.length !== 0)) throw new Error('商品图片状态异常');
+  if (record.status === 'SOLD') return { ...record, schema: DEVICE_SCHEMA, contentSha256: null, photoCount: 0 };
+  const digest = item.evidence?.contentSha256;
+  const count = item.evidence?.photoCount;
+  if (typeof digest !== 'string' || !/^[a-f0-9]{64}$/.test(digest) || !Number.isInteger(count) || count < 0 || count > 9) {
+    throw new Error('测试目录尚未返回完整的商品验收信息');
+  }
+  const urls = item.images.map(photo => photo?.url);
+  if (urls.length !== count || new Set(urls).size !== count || item.images.some((photo, index) =>
+    photo?.fileId !== expectedId + ':' + index || typeof photo.url !== 'string' || !photo.url || !loadedUrls.includes(photo.url))) {
+    throw new Error('请确认全部商品图片已加载后重试');
+  }
+  return { ...record, schema: DEVICE_SCHEMA, contentSha256: digest, photoCount: count };
+}
+
+module.exports = { createWechatCatalog, testEnvironment, deviceEvidence, EVIDENCE_SCHEMA, DEVICE_SCHEMA };

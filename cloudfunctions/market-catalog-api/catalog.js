@@ -249,7 +249,16 @@ function createCatalogHandler({ store, mediaRoot = '', signFiles, clock = Date.n
         const unavailable = row?.status === 'active' ? await store.unavailableAuthors?.([row]) : null;
         const item = unavailable?.has(row.ownerOpenId) ? null : listingFor(row, true, mediaRoot, publishType);
         if (!item) throw new CatalogError('ITEM_NOT_FOUND', '商品不存在或已下架');
-        return { ok: true, data: (await addMedia([item], signFiles, now))[0] };
+        const [data] = await addMedia([item], signFiles, now);
+        if (input.includeEvidence === true && input.action === 'items.get' && data.status === 'ACTIVE') {
+          // Signatures expire independently on each device. Compare the public description
+          // and the ordered, allowlisted photo references before URL signing instead.
+          data.evidence = {
+            contentSha256: createHash('sha256').update(JSON.stringify([data.id, data.title, data.description, item.images])).digest('hex'),
+            photoCount: item.images.length
+          };
+        }
+        return { ok: true, data };
       }
       if (input?.action !== 'items.browse' && input?.action !== 'services.browse') throw new CatalogError('ACTION_NOT_ALLOWED', '目录只支持浏览和查询详情');
       const filters = filtersFor(input, publishType);

@@ -11,10 +11,14 @@
   <button disabled="{{busy}}" bindtap="openTrade">交易联调</button>
   <view class="message" wx:if="{{busy}}">正在读取测试环境…</view>
   <view class="error" wx:if="{{error}}">{{error}}</view>
-  <view class="result" wx:if="{{evidence}}">
-    <text selectable>{{evidence.itemId}}</text>
-    <text wx:if="{{evidence.status === 'SOLD'}}">已售</text>
-    <text wx:else>在售 · NZ$ {{evidence.priceCents / 100}}</text>
+  <view class="result" wx:if="{{detail}}">
+    <text selectable>{{detail.id}}</text>
+    <text wx:if="{{detail.status === 'SOLD'}}">已售</text>
+    <block wx:else>
+      <text>{{detail.title}} · 在售 · NZ$ {{detail.price}}</text>
+      <text>{{detail.description}}</text>
+      <image wx:for="{{detail.images}}" wx:key="fileId" src="{{item.url}}" data-url="{{item.url}}" mode="aspectFit" bindload="photoLoaded" binderror="photoFailed" />
+    </block>
     <button bindtap="copyEvidence">复制验收结果</button>
   </view>
   <view class="result">

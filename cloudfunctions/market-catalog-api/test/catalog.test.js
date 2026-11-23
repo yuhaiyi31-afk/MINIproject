@@ -122,6 +122,40 @@ test('a sale removes the record from the feed and returns only a status marker b
   assert.deepEqual(signed, []);
 });
 
+test('opt-in evidence follows the public text and ordered source photos even when signing is incomplete', async () => {
+  const second = 'cloud://' + ROOT + '/market/images/second.jpg';
+  const row = product('listing-1', { images: [PRODUCT_IMAGE, second] });
+  let generation = 0;
+  let signAll = true;
+  const handler = createCatalogHandler({
+    store: createStore(fixtureDatabase([row], [])), mediaRoot: ROOT,
+    signFiles: async refs => ({ fileList: refs.filter((_, index) => signAll || index === 0)
+      .map(({ fileID }, index) => ({ fileID, tempFileURL: 'https://media.example.test/' + (++generation) + '/' + index })) })
+  });
+  const detail = async (extra = {}) => (await handler({ action: 'items.get', itemId: row._id, ...extra })).data;
+  const withEvidence = () => detail({ includeEvidence: true });
+  assert.equal((await detail()).evidence, undefined);
+  const first = await withEvidence();
+  const rotated = await withEvidence();
+  assert.notEqual(rotated.images[0].url, first.images[0].url);
+  assert.deepEqual(rotated.evidence, first.evidence);
+  assert.match(first.evidence.contentSha256, /^[a-f0-9]{64}$/);
+  assert.equal(first.evidence.photoCount, 2);
+  row.images.reverse();
+  assert.notEqual((await withEvidence()).evidence.contentSha256, first.evidence.contentSha256);
+  row.images.reverse();
+  row.description = 'New public description';
+  const revised = (await withEvidence()).evidence;
+  assert.notEqual(revised.contentSha256, first.evidence.contentSha256);
+  row.contact = 'private field change';
+  signAll = false;
+  const incomplete = await withEvidence();
+  assert.equal(incomplete.images.length, 1);
+  assert.deepEqual(incomplete.evidence, revised);
+  row.status = 'sold';
+  assert.equal((await withEvidence()).evidence, undefined);
+});
+
 test('projection excludes account data and only signs this environment’s product images', async () => {
   const { handler, signed } = fixture([product('listing-1', {
     title: '联系 buyer＠example.test', description: 'Pickup at 23 Queen Street',

@@ -1,8 +1,8 @@
-const { createWechatCatalog, testEnvironment } = require('../catalog-client');
+const { createWechatCatalog, testEnvironment, deviceEvidence } = require('../catalog-client');
 
 Page({
   data: {
-    environmentId: '', itemId: '', items: [], busy: false, loaded: false, error: '', evidence: null, copyable: '',
+    environmentId: '', itemId: '', items: [], busy: false, loaded: false, error: '', detail: null,
     categories: ['接机', '搬家', '找工', '组局', '求助', '租房', '拼车', '代购'],
     serviceCategory: '接机', services: [], servicePage: '', serviceLoaded: false, serviceDetail: null
   },
@@ -11,13 +11,13 @@ Page({
     this.client = null;
     this.connectedEnvironment = '';
     this.setData({
-      environmentId: event.detail.value, items: [], itemId: '', loaded: false, error: '', evidence: null, copyable: '',
+      environmentId: event.detail.value, items: [], itemId: '', loaded: false, error: '', detail: null,
       services: [], servicePage: '', serviceLoaded: false, serviceDetail: null
     });
   },
 
   onItemInput(event) {
-    this.setData({ itemId: event.detail.value, error: '', evidence: null, copyable: '' });
+    this.setData({ itemId: event.detail.value, error: '', detail: null });
   },
 
   getClient() {
@@ -31,7 +31,7 @@ Page({
 
   async loadList() {
     if (this.data.busy) return;
-    this.setData({ busy: true, loaded: false, items: [], error: '', evidence: null, copyable: '' });
+    this.setData({ busy: true, loaded: false, items: [], error: '', detail: null });
     try {
       const items = await this.getClient().list();
       this.setData({ items, loaded: true });
@@ -50,10 +50,11 @@ Page({
 
   async loadItem() {
     if (this.data.busy) return;
-    this.setData({ busy: true, error: '', evidence: null, copyable: '' });
+    this.loadedUrls = new Set();
+    this.setData({ busy: true, error: '', detail: null });
     try {
-      const evidence = await this.getClient().get(this.data.itemId.trim());
-      this.setData({ evidence, copyable: JSON.stringify(evidence) });
+      const detail = await this.getClient().detail(this.data.itemId.trim(), true);
+      this.setData({ detail });
     } catch (error) {
       this.setData({ error: error.message || '读取商品详情失败' });
     } finally {
@@ -61,8 +62,25 @@ Page({
     }
   },
 
+  photoLoaded(event) {
+    const url = event.currentTarget.dataset.url;
+    if (this.data.detail?.images?.some(photo => photo.url === url)) this.loadedUrls.add(url);
+  },
+
+  photoFailed(event) {
+    const url = event.currentTarget.dataset.url;
+    if (!this.data.detail?.images?.some(photo => photo.url === url)) return;
+    this.loadedUrls.delete(url);
+    this.setData({ error: '有商品图片未加载，请重新核对商品详情' });
+  },
+
   copyEvidence() {
-    if (this.data.copyable) wx.setClipboardData({ data: this.data.copyable });
+    if (!this.data.detail) return;
+    try {
+      const record = deviceEvidence(this.connectedEnvironment, this.data.itemId.trim(), this.data.detail, Array.from(this.loadedUrls));
+      this.setData({ error: '' });
+      wx.setClipboardData({ data: JSON.stringify(record), fail: () => this.setData({ error: '复制失败，请重试' }) });
+    } catch (error) { this.setData({ error: error.message }); }
   },
 
   selectServiceCategory(event) {
