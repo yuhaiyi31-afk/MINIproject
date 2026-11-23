@@ -110,6 +110,7 @@ function normalizeItem(item) {
   return {
     ...item,
     priceText: priceFormat.formatPriceAmount(item.price),
+    campusPrice: priceFormat.formatMarketPrice(item.price),
     id,
     _id: id,
     source: 'cloud',

@@ -1,17 +1,19 @@
+@import "./styles/campus.wxss";
+
 /* 全局样式 */
 page {
-  background-color: #F5F5F5;
+  background-color: #F4F7F9;
   font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
   font-size: 28rpx;
-  color: #333333;
+  color: #172E43;
 }
 
 /* 公共卡片 */
 .card {
   background-color: #FFFFFF;
-  border-radius: 16rpx;
+  border-radius: 16px;
   padding: 24rpx;
-  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(23, 46, 67, 0.04);
 }
 
 /* 价格高亮 */
@@ -20,7 +22,7 @@ page {
   min-width: 0;
   max-width: 100%;
   overflow: hidden;
-  color: #FF6B35;
+  color: #A63E1F;
   font-weight: 600;
   font-size: 32rpx;
   text-overflow: ellipsis;
@@ -29,7 +31,7 @@ page {
 
 /* 辅助文字 */
 .text-muted {
-  color: #999999;
+  color: #526778;
   font-size: 24rpx;
 }
 

@@ -283,3 +283,11 @@
 .safety-announcement { display:flex; min-height:54rpx; padding:0 24rpx; align-items:center; background:#FFF7E8; color:#8A682E; font-size:21rpx; }
 .safety-announcement-icon { display:flex; width:28rpx; height:28rpx; margin-right:10rpx; align-items:center; justify-content:center; border-radius:50%; background:#E9B458; color:#FFF; font-size:18rpx; font-weight:700; }
 .safety-announcement-arrow { margin-left:auto; color:#B58C47; font-size:30rpx; }
+
+.home-brand { display: flex; min-height: 48px; margin: 8px 16px 2px; align-items: center; justify-content: space-between; }
+.home-entry,.home-state,.home-safety { margin: 12px 16px; } .home-entry { box-sizing: border-box; }
+.home-safety,.home-state { display: flex; align-items: center; justify-content: space-between; gap: 8px; } .home-state { padding: 20px 12px; }
+.home-link { display: inline-flex; align-items: center; min-height: 44px; color: #215B98; font-size: 13px; }
+.section-header { padding: 0 16px; min-height: 48px; display: flex; align-items: center; }
+.search-area { padding: 0 16px; background: transparent; } .search-bar { min-height: 48px; border: 1px solid #D9E3EA; border-radius: 12px; }
+.kingkong-section { margin: 0 16px; border-radius: 16px; background: #fff; }

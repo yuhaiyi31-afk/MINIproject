@@ -1,3 +1,4 @@
+const { formatMarketPrice } = require('../../utils/price-format');
 const itemRouter = require('../../utils/item-router');
 const marketCloud = require('../../utils/market-cloud');
 
@@ -5,6 +6,7 @@ const FEED_REFRESH_INTERVAL = 60 * 1000;
 
 Page({
   data: {
+    failedCovers: {},
     searchKeyword: '',
     showSearchPanel: false,
     suggestions: [],
@@ -12,6 +14,8 @@ Page({
     searchHistory: [],
     recommendList: [],
     displayList: [],
+    feedLoading: false,
+    feedError: '',
     searchEmpty: false,
     kingkongRow1: [
       { id: 1, iconPath: '/assets/icons/home/pickup.svg', name: '接机', type: 'pickup', bgColor: '#EAF3FF' },
@@ -33,6 +37,11 @@ Page({
     infoList: []
   },
 
+  onCoverError(e) {
+    const key = e.currentTarget.dataset.key;
+    if (key) this.setData({ failedCovers: { ...this.data.failedCovers, [key]: true } });
+  },
+
   onLoad() {
     this.loadHistory();
     const cached = marketCloud.getCachedItems(0, 12);
@@ -41,6 +50,7 @@ Page({
     if (!freshCache) this.loadMarketItems(!!cached);
   },
 
+  retryFeed() { this.loadMarketItems(false); },
   onOpenSafety() {
     wx.navigateTo({ url: '/pages/policies/index?type=safety' });
   },
@@ -50,21 +60,28 @@ Page({
     else this.genRec();
   },
 
-  applyMarketItems(infoList) {
+  applyMarketItems(rows) {
+    const infoList = rows.map(item => ({ ...item, campusPrice: formatMarketPrice(item.price) }));
     this._marketLoaded = true;
     this._lastMarketRefreshAt = Date.now();
-    this.setData({ infoList, displayList: infoList.slice(0, 6), searchEmpty: false });
+    this.setData({ failedCovers: {}, feedError: '', infoList, displayList: infoList.slice(0, 6), searchEmpty: false });
     getApp().globalData._infoItems = infoList;
     this.genRec();
   },
   async loadMarketItems(background) {
+    if (this._readingFeed) return;
+    this._readingFeed = true;
+    if (!background) this.setData({ feedLoading: true });
     try {
       const result = await marketCloud.listItems(0, 12);
       this.applyMarketItems(result.items);
     } catch (error) {
       if (background && this.data.infoList.length) return;
       this._marketLoaded = true;
-      this.setData({ infoList: [], displayList: [], recommendList: [] });
+      this.setData({ feedError: marketCloud.getErrorMessage(error), infoList: [], displayList: [], recommendList: [] });
+    } finally {
+      this._readingFeed = false;
+      this.setData({ feedLoading: false });
     }
   },
 
@@ -159,7 +176,7 @@ Page({
       getApp().globalData.helpTabType = 'rent';
       wx.switchTab({ url: '/pages/help/index/index' });
     } else if (t === 'local') {
-      getApp().globalData.helpTabType = 'pickup';
+      getApp().globalData.helpTabType = 'all';
       wx.switchTab({ url: '/pages/help/index/index' });
     } else if (['pickup', 'moving', 'job', 'party', 'help'].includes(t)) {
       getApp().globalData.helpTabType = t;

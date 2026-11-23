@@ -1,0 +1,15 @@
+<template name="listing-card">
+  <view class="listing-card">
+    <view class="listing-media">
+      <view class="listing-empty"><text class="listing-placeholder">{{coverFailed ? '图片暂不可用' : '暂无照片'}}</text></view>
+      <image wx:if="{{!coverFailed && (item.thumbnail || (item.images && item.images.length))}}" class="listing-cover" src="{{item.thumbnail || item.images[0]}}" mode="aspectFill" lazy-load binderror="onCoverError" data-key="{{item.itemKey}}" />
+      <text wx:if="{{item.status === 'sold' || item.status === 'reserved' || item.status === 'unlisted' || item.status === 'suspended'}}" class="listing-status">{{item.status === 'sold' ? '已售' : item.status === 'reserved' ? '已预留' : item.status === 'unlisted' ? '已下架' : '平台暂停'}}</text>
+    </view>
+    <view class="listing-body">
+      <text class="listing-title">{{item.title}}</text>
+      <text class="listing-price {{item.campusPrice.length > 13 ? 'listing-price-long' : ''}}">{{item.campusPrice}}</text>
+      <text wx:if="{{item.condition || item.region}}" class="listing-meta">{{item.condition}}{{item.condition && item.region ? ' · ' : ''}}{{item.region}}</text>
+      <text wx:if="{{item.time}}" class="listing-meta">{{item.time}}</text>
+    </view>
+  </view>
+</template>

@@ -1,3 +1,4 @@
+const { formatMarketPrice } = require('../../../utils/price-format');
 const itemRouter = require('../../../utils/item-router');
 const marketCloud = require('../../../utils/market-cloud');
 const marketOptions = require('../../../utils/market-options');
@@ -7,6 +8,7 @@ const PAGE_SIZE = 12;
 
 Page({
   data: {
+    failedCovers: {},
     keyword: '',
     showFilter: false,
     filterActive: false,
@@ -25,6 +27,11 @@ Page({
     hasMore: true,
     nextSkip: 0,
     emptyText: '暂无真实发布'
+  },
+
+  onCoverError(e) {
+    const key = e.currentTarget.dataset.key;
+    if (key) this.setData({ failedCovers: { ...this.data.failedCovers, [key]: true } });
   },
 
   onLoad() {
@@ -53,20 +60,22 @@ Page({
   },
 
   getFilters() {
-    const sortOption = marketOptions.SORT_OPTIONS[this.data.sortIdx] || marketOptions.SORT_OPTIONS[0];
+    const current = this.data.showFilter && this._savedFilters ? this._savedFilters : this.data;
+    const sortOption = marketOptions.SORT_OPTIONS[current.sortIdx] || marketOptions.SORT_OPTIONS[0];
     return {
       keyword: String(this.data.keyword || '').trim(),
       category: this.data.categoryIdx > 0 ? this.data.categoryOptions[this.data.categoryIdx] : '',
-      region: this.data.regionIdx > 0 ? this.data.regionOptions[this.data.regionIdx] : '',
-      minPrice: this.data.filterMinPrice,
-      maxPrice: this.data.filterMaxPrice,
-      days: [0, 1, 3, 7][this.data.filterTimeIdx] || 0,
+      region: current.regionIdx > 0 ? this.data.regionOptions[current.regionIdx] : '',
+      minPrice: current.filterMinPrice,
+      maxPrice: current.filterMaxPrice,
+      days: [0, 1, 3, 7][current.filterTimeIdx] || 0,
       sort: sortOption.value
     };
   },
 
   applyItems(result, reset) {
-    const items = (reset ? [] : this.data.items).concat(result.items || []);
+    const incoming = (result.items || []).map(item => ({ ...item, campusPrice: formatMarketPrice(item.price) }));
+    const items = (reset ? [] : this.data.items).concat(incoming);
     this._loaded = true;
     this._lastRefreshAt = Date.now();
     this.setData({
@@ -74,13 +83,15 @@ Page({
       hasMore: !!result.hasMore,
       nextSkip: Number(result.nextSkip) || 0,
       loading: false,
+      loadFailed: false,
+      failedCovers: reset ? {} : this.data.failedCovers,
       emptyText: items.length ? '' : '没有找到符合条件的在售商品'
     });
     getApp().globalData._allItems = items;
   },
 
   async loadItems(reset, background) {
-    if (this.data.loading || (!reset && !this.data.hasMore)) return;
+    if (!reset && (this.data.loading || !this.data.hasMore)) return;
     const requestId = reset ? Number(this._requestId || 0) + 1 : Number(this._requestId || 0);
     if (reset) this._requestId = requestId;
     if (!background) this.setData({ loading: true, emptyText: '正在读取真实发布…' });
@@ -93,7 +104,7 @@ Page({
       if (background && this.data.items.length) return;
       this._loaded = true;
       const message = marketCloud.getErrorMessage(error);
-      this.setData({ loading: false, hasMore: false, items: reset ? [] : this.data.items, emptyText: message });
+      this.setData({ loading: false, loadFailed: true, hasMore: false, items: reset ? [] : this.data.items, emptyText: message });
       wx.showToast({ title: message, icon: 'none', duration: 3000 });
     } finally {
       wx.stopPullDownRefresh();
@@ -103,7 +114,7 @@ Page({
   onKeywordInput(e) {
     this.setData({ keyword: e.detail.value || '' });
     if (this._searchTimer) clearTimeout(this._searchTimer);
-    this._searchTimer = setTimeout(() => this.loadItems(true, true), 450);
+    this._searchTimer = setTimeout(() => this.loadItems(true), 450);
   },
 
   onSearchConfirm() {
@@ -112,6 +123,7 @@ Page({
   },
 
   onClearKeyword() {
+    clearTimeout(this._searchTimer);
     this.setData({ keyword: '' });
     this.loadItems(true);
   },
@@ -124,7 +136,16 @@ Page({
     this.loadItems(true);
   },
 
-  onToggleFilter() { this.setData({ showFilter: !this.data.showFilter }); },
+  onToggleFilter() {
+    if (this.data.showFilter) {
+      this.setData({ ...this._savedFilters, showFilter: false });
+      this._savedFilters = null;
+      return;
+    }
+    const { filterMinPrice, filterMaxPrice, filterTimeIdx, regionIdx, sortIdx } = this.data;
+    this._savedFilters = { filterMinPrice, filterMaxPrice, filterTimeIdx, regionIdx, sortIdx };
+    this.setData({ showFilter: true });
+  },
   onFilterMinPrice(e) { this.setData({ filterMinPrice: e.detail.value }); },
   onFilterMaxPrice(e) { this.setData({ filterMaxPrice: e.detail.value }); },
   onFilterTime(e) { this.setData({ filterTimeIdx: Number(e.detail.value) || 0 }); },
@@ -145,7 +166,8 @@ Page({
     const min = Number(this.data.filterMinPrice) || 0;
     const hasMax = this.data.filterMaxPrice !== '';
     const max = hasMax ? Number(this.data.filterMaxPrice) : Infinity;
-    if ((hasMax && !Number.isFinite(max)) || max < 0 || max < min) {
+    const invalid = [this.data.filterMinPrice, this.data.filterMaxPrice].some(v => v !== '' && !/^\d+(\.\d{1,2})?$/.test(v));
+    if (invalid || !Number.isFinite(min) || (hasMax && !Number.isFinite(max)) || min < 0 || max < min) {
       wx.showToast({ title: '请检查价格区间', icon: 'none' });
       return;
     }
@@ -167,6 +189,8 @@ Page({
     this.loadItems(true);
   },
 
+  onRetry() { this.loadItems(true); },
+  onResetSearch() { clearTimeout(this._searchTimer); this.setData({ keyword: '' }); this.onClearFilter(); },
   onItemTap(e) { itemRouter.navigateToDetail(e.currentTarget.dataset.item, 'cloud'); },
   onPublishTap() { wx.navigateTo({ url: '/pages/publish/index' }); },
   onPullDownRefresh() { this.loadItems(true); },
