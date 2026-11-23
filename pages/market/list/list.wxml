@@ -3,7 +3,7 @@
   <view class="catalog-header">
     <view class="catalog-heading"><text class="catalog-title">二手集市</text><view class="catalog-publish" bindtap="onPublishTap" aria-role="button"><text class="catalog-publish-label">发布商品</text></view></view>
     <view class="catalog-search">
-      <view class="catalog-loupe"><view class="catalog-loupe-stem"></view></view>
+      <view class="catalog-loupe"><view class="catalog-loupe-ring"></view><view class="catalog-loupe-stem"></view></view>
       <input class="catalog-field" value="{{keyword}}" placeholder="搜索二手商品" maxlength="60" bindinput="onKeywordInput" bindconfirm="onSearchConfirm" confirm-type="search" />
       <text wx:if="{{keyword}}" class="catalog-clear" aria-role="button" aria-label="清空搜索" bindtap="onClearKeyword">×</text><text class="catalog-submit" aria-role="button" bindtap="onSearchConfirm">搜索</text>
     </view>

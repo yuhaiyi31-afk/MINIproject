@@ -42,58 +42,42 @@
 
     <swiper
       wx:if="{{item.images && item.images.length > 0}}"
-      class="detail-swiper"
+      class="product-gallery" indicator-dots="{{item.images.length > 1}}"
       current="{{currentImageIndex}}"
       bindchange="onSwiperChange"
     >
       <swiper-item wx:for="{{item.images}}" wx:key="*this">
         <image
-          class="swiper-img"
+          wx:if="{{!failedPhotos[index]}}" class="product-photo"
           src="{{item}}"
           mode="aspectFit"
-          data-src="{{item}}"
+          data-src="{{item}}" data-index="{{index}}" binderror="onPhotoError"
           bindtap="onPreviewImage"
         ></image>
+        <view wx:else class="photo-notice" bindtap="retryDetail" aria-role="button"><text class="photo-note">图片加载失败，点此刷新</text></view>
       </swiper-item>
     </swiper>
 
-    <view class="image-counter" wx:if="{{item.images && item.images.length > 1}}">
-      {{currentImageIndex + 1}} / {{item.images.length}}
-    </view>
   </view>
-
-  <!-- 商品信息 -->
-  <view class="product-card">
-    <view class="price-row">
-      <text class="detail-price campus-detail-amount">{{item.campusPrice}}</text>
-      <view class="product-pills">
-        <text class="status-pill {{item.status}}">{{item.status === 'reserved' ? '已预留' : item.status === 'sold' ? '已售' : (item.status === 'unlisted' ? '已下架' : (item.status === 'suspended' ? '平台暂停' : (item.status === 'active' ? (item.itemType === 'service' ? '可咨询' : '在售') : '状态待确认')))}}</text>
-        <text class="category-pill" wx:if="{{item.category}}">{{item.category}}</text>
-      </view>
-    </view>
-
-    <text class="detail-title">{{item.title}}</text>
-
-    <view class="description-block" wx:if="{{showDescription}}">
-        <text class="section-label">{{item.itemType === 'service' ? '信息描述' : '商品描述'}}</text>
-      <text class="detail-desc">{{item.description}}</text>
-    </view>
-
-    <view class="product-facts" wx:if="{{item.itemType !== 'service'}}">
-      <view class="fact-row"><text class="fact-label">新旧程度</text><text class="fact-value">{{item.condition || '卖家暂未补充'}}</text></view>
-      <view class="fact-row"><text class="fact-label">大概地区</text><text class="fact-value">{{item.region || '卖家暂未补充'}}</text></view>
-      <view class="fact-row"><text class="fact-label">交付方式</text><text class="fact-value">{{item.deliveryMethod || '双方协商'}}</text></view>
-    </view>
-
-    <view class="meta-row">
-      <text wx:if="{{item.time}}">发布于 {{item.time}}</text>
-      <text wx:if="{{item.subCategory}}">{{item.subCategory}}</text>
-    </view>
+  <view wx:elif="{{item.itemType !== 'service' && item.status !== 'sold'}}" class="product-gallery"><view class="photo-notice"><text class="photo-note">暂无可用照片</text></view></view>
+  <view class="product-panel">
+    <view class="product-value-row"><text class="product-amount {{item.campusPrice.length > 13 ? 'product-amount-long' : ''}}">{{item.campusPrice}}</text>
+      <text class="product-status">{{item.status === 'reserved' ? '已预留' : item.status === 'sold' ? '已售' : item.status === 'unlisted' ? '已下架' : item.status === 'suspended' ? '平台暂停' : item.status === 'active' ? (item.itemType === 'service' ? '可咨询' : '在售') : '状态待确认'}}</text></view>
+    <text class="product-name">{{item.title}}</text><text wx:if="{{item.time}}" class="product-date">发布于 {{item.time}}</text>
+  </view>
+  <view class="product-panel" wx:if="{{showDescription || item.category || item.condition || item.region || item.deliveryMethod || item.subCategory}}">
+    <text class="product-heading">{{item.itemType === 'service' ? '服务信息' : '商品信息'}}</text>
+    <text wx:if="{{showDescription}}" class="product-copy">{{item.description}}</text>
+    <view wx:if="{{item.category}}" class="product-fact"><text class="fact-key">分类</text><text class="fact-data">{{item.category}}</text></view>
+    <view wx:if="{{item.condition && item.itemType !== 'service'}}" class="product-fact"><text class="fact-key">新旧程度</text><text class="fact-data">{{item.condition}}</text></view>
+    <view wx:if="{{item.region}}" class="product-fact"><text class="fact-key">大致地区</text><text class="fact-data">{{item.region}}</text></view>
+    <view wx:if="{{item.deliveryMethod && item.itemType !== 'service'}}" class="product-fact"><text class="fact-key">交付方式</text><text class="fact-data">{{item.deliveryMethod}}</text></view>
+    <view wx:if="{{item.subCategory}}" class="product-fact"><text class="fact-key">子分类</text><text class="fact-data">{{item.subCategory}}</text></view>
   </view>
 
   <!-- 卖家信息 -->
   <view class="detail-card seller-card">
-    <text class="card-heading">{{item.itemType === 'service' ? '发布者' : '卖家'}}</text>
+    <text class="product-heading">{{item.itemType === 'service' ? '发布者' : '卖家'}}</text>
     <view class="seller-content">
       <image
         wx:if="{{sellerAvatarUrl}}"
@@ -106,27 +90,16 @@
       </view>
       <view class="seller-copy">
         <text class="seller-name">{{sellerName}}</text>
-        <text class="seller-note">{{isOwner ? '这是你自己发布的内容' : '通过站内聊天联系' + (item.itemType === 'service' ? '发布者' : '卖家')}}{{item.sellerType === 'BUSINESS' ? ' · 商业卖家' : ' · 私人卖家'}}</text>
+        <text class="seller-note">{{isOwner ? '这是你自己发布的内容' : '通过站内聊天联系' + (item.itemType === 'service' ? '发布者' : '卖家')}}{{item.sellerType === 'BUSINESS' ? ' · 商家卖家' : (item.sellerType === 'PRIVATE' ? ' · 个人卖家' : '')}}</text>
       </view>
       <button class="seller-chat-btn" bindtap="onStartChat" loading="{{chatBusy}}" disabled="{{chatBusy}}" wx:if="{{ownershipResolved && !isOwner}}">聊一聊</button>
     </view>
   </view>
 
   <!-- 交易安全 -->
-  <view class="detail-card buyer-protect">
-    <view class="protect-header">
-      <view class="protect-icon">盾</view>
-      <view>
-      <text class="protect-title">{{item.itemType === 'service' ? '服务安全提示' : '交易安全提示'}}</text>
-      <text class="protect-subtitle">{{item.itemType === 'service' ? '确认服务内容后再付款' : '当面确认商品后再付款'}}</text>
-      </view>
-    </view>
-    <view class="protect-list">
-      <text class="protect-required">禁止违法交易。平台不代收款，请验货后付款，勿提前转账，谨防诈骗。</text>
-      <view class="protect-item"><view class="protect-dot"></view><text>选择公共场所当面交易</text></view>
-      <view class="protect-item"><view class="protect-dot"></view><text>{{item.itemType === 'service' ? '核实服务信息，保留聊天和付款记录' : '仔细检查物品，保留聊天和付款记录'}}</text></view>
-      <view class="protect-item"><view class="protect-dot"></view><text>发现异常时停止交易并举报</text></view>
-    </view>
+  <view class="product-safety">
+    <text class="product-safety-title">{{item.itemType === 'service' ? '服务安全提示' : '交易安全提示'}}</text>
+    <text class="product-safety-text">{{item.itemType === 'service' ? '请在站内确认服务内容、时间和费用，保留沟通与付款记录。' : '请选择公共场所当面验货，确认后再付款。平台不代收款，遇到异常请停止交易并举报。'}}</text>
   </view>
 
   <view class="detail-secondary" wx:if="{{!isOwner}}">

@@ -4,7 +4,7 @@
   <view class="discover-inner">
     <view class="discover-search">
       <view class="catalog-search">
-        <view class="catalog-loupe"><view class="catalog-loupe-stem"></view></view>
+        <view class="catalog-loupe"><view class="catalog-loupe-ring"></view><view class="catalog-loupe-stem"></view></view>
         <input class="catalog-field" placeholder="搜索商品或生活服务" value="{{searchKeyword}}" maxlength="60" bindinput="onSearchInput" bindfocus="onSearchFocus" bindconfirm="onSearchConfirm" confirm-type="search" />
         <text class="catalog-submit" aria-role="button" bindtap="onSearchConfirm">搜索</text>
       </view>

@@ -33,6 +33,7 @@ Page({
     isFavorited: false,
     favoriteBusy: false,
     currentImageIndex: 0,
+    failedPhotos: {},
     sellerName: '匿名用户',
     sellerAvatarUrl: '',
     sellerInitial: '用',
@@ -89,6 +90,7 @@ Page({
     this.setData({
       item: { ...item, campusPrice: formatMarketPrice(item.price) },
       currentImageIndex: 0,
+      failedPhotos: {},
       showDescription: !!description && description !== title,
       ownershipResolved: !cached || typeof item.isOwner === 'boolean',
       isOwner: item.isOwner === true,
@@ -105,6 +107,14 @@ Page({
 
   findItem: function(id, itemType, source) {
     return itemRouter.resolveItem(id, itemType, source);
+  },
+
+  onPhotoError(e) {
+    const index = Number(e.currentTarget.dataset.index);
+    const src = e.currentTarget.dataset.src;
+    if (Array.isArray(this.data.item.images) && this.data.item.images[index] === src) {
+      this.setData({ ['failedPhotos.' + index]: true });
+    }
   },
 
   onSwiperChange(e) {
