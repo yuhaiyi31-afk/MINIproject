@@ -1,0 +1,35 @@
+name: WeChat mini program checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  unit-and-cloud-function-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install locked CloudBase function dependencies
+        run: |
+          npm ci --prefix cloudfunctions/market-catalog-api
+          npm ci --prefix cloudfunctions/market-trade-preview
+      - name: Native mini program source and UI tests
+        run: node --test tests/*.test.cjs
+      - name: Shared catalog and trade handler tests
+        run: |
+          node --test cloudfunctions/market-catalog-api/test/*.test.js
+          node --test cloudfunctions/market-trade-preview/test/*.test.js
+      - name: Catalog preview tests
+        run: node --test tools/catalog-preview/test/*.test.cjs
+
+# WeChat Developer Tools compilation, phone authentication and cloud deploy
+# require explicit separate approval and real test-environment evidence.
