@@ -1,20 +1,7 @@
-page { background:#F4F6F8; }
-
-.market-tools { padding:18rpx 24rpx 12rpx; background:#FFF; }
-.market-search { height:72rpx; display:flex; align-items:center; padding:0 20rpx; border-radius:38rpx; background:#F3F5F7; }
-.market-search-icon { color:#7E8794; font-size:34rpx; line-height:1; }
-.market-search-input { flex:1; min-width:0; height:72rpx; margin-left:12rpx; color:#273142; font-size:27rpx; }
-.market-search-clear { width:48rpx; color:#9AA2AE; font-size:34rpx; text-align:center; }
-.category-scroll { width:100%; margin-top:18rpx; white-space:nowrap; }
-.category-row { display:flex; gap:12rpx; padding-bottom:4rpx; }
-.category-chip { display:inline-flex; flex-shrink:0; height:54rpx; padding:0 22rpx; align-items:center; border-radius:28rpx; background:#F3F5F7; color:#626C79; font-size:23rpx; }
-.category-chip.active { background:#E7F1FC; color:#3478C9; font-weight:600; }
-.filter-bar { display:flex; align-items:center; justify-content:space-between; margin-top:18rpx; }
-.result-hint { color:#9098A4; font-size:21rpx; }
-.filter-btn { display:flex; height:52rpx; padding:0 18rpx; align-items:center; border-radius:28rpx; background:#F3F5F7; color:#5E6875; font-size:22rpx; }
-.filter-btn-on { background:#E7F1FC; color:#3478C9; }
-.filter-arrow { margin-left:8rpx; font-size:16rpx; }
-
+@import "../../../styles/discovery.wxss";
+.catalog-search,.catalog-loupe,.feed-cell,.catalog-publish { box-sizing:border-box; }
+.catalog-categories { white-space:nowrap; }
+.catalog-chip { display:inline-block; }
 .filter-panel { margin:16rpx 24rpx; padding:24rpx; }
 .filter-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:20rpx; }
 .filter-label { margin-right:18rpx; flex-shrink:0; color:#505A68; font-size:24rpx; }
@@ -28,24 +15,8 @@ page { background:#F4F6F8; }
 .filter-apply { background:#4A90D9; color:#FFF; }
 .filter-clear { background:#EFF2F5; color:#626C79; }
 
-.item-list { padding:2rpx 24rpx 20rpx; }
-.item-card { display:flex; margin:16rpx 0; padding:18rpx; }
-.item-img { position:relative; width:190rpx; height:190rpx; flex-shrink:0; overflow:hidden; border-radius:14rpx; background:#EEF1F4; }
-.item-cover { width:100%; height:100%; display:block; }
-.item-cover-empty { display:flex; width:100%; height:100%; align-items:center; justify-content:center; color:#A4ABB4; font-size:21rpx; }
-.status-badge { position:absolute; top:10rpx; left:10rpx; padding:5rpx 11rpx; border-radius:16rpx; background:rgba(31,139,87,.9); color:#FFF; font-size:18rpx; }
-.item-info { display:flex; flex:1; min-width:0; margin-left:20rpx; flex-direction:column; }
-.item-title { min-height:76rpx; color:#273142; font-size:28rpx; font-weight:600; line-height:1.42; }
-.item-info .text-price { display:block; max-width:100%; margin-top:8rpx; overflow:hidden; color:#FF5A36; font-size:31rpx; font-weight:700; text-overflow:ellipsis; white-space:nowrap; }
-.item-meta-row,.item-seller-row { display:flex; min-width:0; align-items:center; }
-.item-meta-row { justify-content:space-between; margin-top:11rpx; color:#8E97A4; font-size:20rpx; }
-.item-region { max-width:65%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.item-seller-row { margin-top:10rpx; color:#747E8B; font-size:20rpx; }
-.item-avatar { width:30rpx; height:30rpx; margin-right:8rpx; flex-shrink:0; border-radius:50%; background:#E8F0F8; }
-.item-seller { max-width:150rpx; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.seller-type { margin-left:8rpx; padding:3rpx 8rpx; border-radius:10rpx; background:#FFF1E8; color:#D96B2B; font-size:17rpx; }
-
-.fab-btn { position:fixed; z-index:100; right:32rpx; bottom:120rpx; display:flex; width:104rpx; height:104rpx; align-items:center; justify-content:center; flex-direction:column; border-radius:50%; background:linear-gradient(135deg,#4A90D9,#6BA5E7); color:#FFF; box-shadow:0 8rpx 24rpx rgba(74,144,217,.4); }
-.fab-icon { font-size:36rpx; font-weight:300; line-height:1; }
-.fab-text { margin-top:-2rpx; font-size:18rpx; }
-.empty-tip { padding:100rpx 30rpx; text-align:center; }
+.filter-panel { margin:12px 16px 0; padding:16px; }
+.filter-input,.filter-picker,.filter-clear,.filter-apply { min-height:44px; box-sizing:border-box; }
+.filter-clear,.filter-apply { border-radius:12px; line-height:44px; }
+.filter-apply { background:#215B98; }
+.feed-state { display:flex; flex-direction:column; align-items:center; }

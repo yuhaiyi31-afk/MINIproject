@@ -1,40 +1,18 @@
-<view class="market-tools">
-  <view class="market-search">
-    <text class="market-search-icon">⌕</text>
-    <input
-      class="market-search-input"
-      value="{{keyword}}"
-      placeholder="搜索二手商品"
-      confirm-type="search"
-      maxlength="60"
-      bindinput="onKeywordInput"
-      bindconfirm="onSearchConfirm"
-    />
-    <text class="market-search-clear" wx:if="{{keyword}}" bindtap="onClearKeyword">×</text>
-  </view>
-
-  <scroll-view class="category-scroll" scroll-x enable-flex show-scrollbar="{{false}}">
-    <view class="category-row">
-      <text
-        class="category-chip {{categoryIdx === index ? 'active' : ''}}"
-        wx:for="{{categoryOptions}}"
-        wx:key="*this"
-        data-index="{{index}}"
-        bindtap="onCategoryTap"
-      >{{item}}</text>
+<import src="../../../templates/listing-card.wxml" />
+<view class="discovery">
+  <view class="catalog-header">
+    <view class="catalog-heading"><text class="catalog-title">二手集市</text><view class="catalog-publish" bindtap="onPublishTap" aria-role="button"><text class="catalog-publish-label">发布商品</text></view></view>
+    <view class="catalog-search">
+      <view class="catalog-loupe"><view class="catalog-loupe-ring"></view><view class="catalog-loupe-stem"></view></view>
+      <input class="catalog-field" value="{{keyword}}" placeholder="搜索二手商品" maxlength="60" bindinput="onKeywordInput" bindconfirm="onSearchConfirm" confirm-type="search" />
+      <text wx:if="{{keyword}}" class="catalog-clear" aria-role="button" aria-label="清空搜索" bindtap="onClearKeyword">×</text><text class="catalog-submit" aria-role="button" bindtap="onSearchConfirm">搜索</text>
     </view>
-  </scroll-view>
-
-  <view class="filter-bar">
-    <text class="result-hint">{{items.length}} 件在售商品</text>
-    <view class="filter-btn {{filterActive ? 'filter-btn-on' : ''}}" bindtap="onToggleFilter">
-      <text>筛选与排序</text>
-      <text class="filter-arrow">{{showFilter ? '▲' : '▼'}}</text>
-    </view>
+    <scroll-view class="catalog-categories" scroll-x enable-flex show-scrollbar="{{false}}"><view class="catalog-rail">
+      <text wx:for="{{categoryOptions}}" wx:key="*this" class="catalog-chip {{categoryIdx === index ? 'catalog-chip-selected' : ''}}" data-index="{{index}}" bindtap="onCategoryTap">{{item}}</text>
+    </view></scroll-view>
+    <view class="catalog-results"><text class="catalog-count">已显示 {{items.length}} 件</text><text class="catalog-filter" aria-role="button" bindtap="onToggleFilter">{{showFilter ? '收起筛选' : (filterActive ? '已筛选' : '筛选与排序')}}</text></view>
   </view>
-</view>
-
-<view class="filter-panel card" wx:if="{{showFilter}}">
+  <view class="filter-panel card" wx:if="{{showFilter}}">
   <view class="filter-row">
     <text class="filter-label">价格区间 NZ$</text>
     <view class="filter-price-row">
@@ -67,35 +45,15 @@
     <button class="filter-apply" bindtap="onApplyFilter">查看结果</button>
   </view>
 </view>
-
-<view class="item-list">
-  <view class="item-card card" wx:for="{{items}}" wx:key="itemKey" bindtap="onItemTap" data-item="{{item}}">
-    <view class="item-img">
-      <image class="item-cover" wx:if="{{item.images && item.images.length}}" src="{{item.images[0]}}" mode="aspectFill" lazy-load fade-show></image>
-      <view class="item-cover-empty" wx:else>暂无图片</view>
-      <text class="status-badge">在售</text>
-    </view>
-    <view class="item-info">
-      <text class="item-title text-ellipsis-2">{{item.title}}</text>
-      <text class="text-price">{{item.price > 0 ? 'NZ$ ' + (item.priceText || item.price) : '免费'}}</text>
-      <view class="item-meta-row">
-        <text class="item-region">{{item.region || '地区待补充'}}</text>
-        <text class="item-time">{{item.time}}</text>
-      </view>
-      <view class="item-seller-row">
-        <image class="item-avatar" wx:if="{{item.publisherAvatar}}" src="{{item.publisherAvatar}}" mode="aspectFill" lazy-load fade-show></image>
-        <text class="item-seller">{{item.nickname}}</text>
-        <text class="seller-type" wx:if="{{item.sellerType === 'BUSINESS'}}">商家</text>
-      </view>
-    </view>
-  </view>
+  <view class="catalog-feed" wx:if="{{items.length}}"><view class="feed-grid"><view class="feed-cell" wx:for="{{items}}" wx:key="itemKey" bindtap="onItemTap" data-item="{{item}}" aria-role="button" aria-label="{{item.title}}，{{item.campusPrice}}">
+    <template is="listing-card" data="{{item, coverFailed: failedCovers[item.itemKey], coverLoaded: loadedCovers[item.itemKey]}}" />
+  </view></view></view>
+  <view class="campus-state feed-state" wx:if="{{loading}}"><text class="campus-muted">正在加载商品…</text></view>
+<view class="campus-state feed-state" wx:elif="{{loadFailed || !items.length}}">
+  <text class="campus-body">{{emptyText}}</text>
+  <button wx:if="{{loadFailed}}" class="campus-secondary" bindtap="onRetry">重新加载</button>
+  <button wx:elif="{{filterActive || keyword}}" class="campus-secondary" bindtap="onResetSearch">查看全部商品</button>
+  <button wx:else class="campus-secondary" bindtap="onPublishTap">发布商品</button>
 </view>
-
-<view class="empty-tip" wx:if="{{!loading && items.length === 0}}">
-  <text class="text-muted">{{emptyText}}</text>
-</view>
-
-<view class="fab-btn" bindtap="onPublishTap">
-  <text class="fab-icon">＋</text>
-  <text class="fab-text">发布</text>
+  <text class="catalog-end" wx:if="{{items.length && !hasMore && !loading && !loadFailed}}">已经到底了</text>
 </view>

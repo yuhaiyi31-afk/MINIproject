@@ -1,0 +1,20 @@
+/* Product detail content shared by WeChat, Android and iOS. */
+.product-gallery { width: 100%; height: 640rpx; max-height: 392px; background-color: #E8F2FC; }
+.product-photo { width: 100%; height: 100%; }
+.photo-notice { display: flex; height: 100%; flex-direction: column; align-items: center; justify-content: center; }
+.photo-note { color: #526778; font-size: 14px; line-height: 20px; }
+.product-panel { display: flex; flex-direction: column; margin: 12px 16px 0; padding: 16px; border: 1px solid #D9E3EA; border-radius: 16px; background-color: #FFFFFF; }
+.product-value-row { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+.product-amount { color: #A63E1F; font-size: 24px; font-weight: 700; line-height: 32px; }
+.product-amount-long { font-size: 19px; }
+.product-status { padding: 3px 9px; border-radius: 10px; background-color: #E8F2FC; color: #215B98; font-size: 12px; line-height: 18px; }
+.product-name { margin-top: 8px; color: #172E43; font-size: 22px; font-weight: 700; line-height: 30px; }
+.product-date { margin-top: 6px; color: #526778; font-size: 13px; line-height: 19px; }
+.product-heading { color: #172E43; font-size: 16px; font-weight: 700; line-height: 23px; }
+.product-copy { margin-top: 8px; color: #172E43; font-size: 15px; line-height: 23px; }
+.product-fact { display: flex; flex-direction: row; align-items: center; justify-content: space-between; min-height: 40px; border-bottom-width: 1px; border-bottom-style: solid; border-bottom-color: #EDF1F4; }
+.fact-key { margin-right: 12px; color: #526778; font-size: 13px; line-height: 20px; }
+.fact-data { flex: 1; text-align: right; color: #172E43; font-size: 14px; line-height: 20px; }
+.product-safety { display: flex; flex-direction: column; margin: 12px 16px; padding: 12px 14px; border-radius: 12px; background-color: #FFF6E7; }
+.product-safety-title { color: #734A18; font-size: 14px; font-weight: 700; line-height: 20px; }
+.product-safety-text { margin-top: 4px; color: #734A18; font-size: 13px; line-height: 20px; }

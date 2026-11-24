@@ -1,14 +1,8 @@
 <!-- 视频上传区 -->
 <view class="image-section">
-  <view class="section-label">🎬 视频展示（可选）</view>
-  <view class="video-upload" wx:if="{{!videoPath}}" bindtap="onChooseVideo">
-    <text class="video-add-icon">▶</text>
-    <text class="video-add-text">上传短视频</text>
-  </view>
-  <view class="video-preview" wx:else>
-    <video class="video-player" src="{{videoPath}}" controls></video>
-    <view class="img-delete" bindtap="onDeleteVideo">✕</view>
-  </view>
+  <text class="campus-h1">{{isEdit ? '编辑发布' : (publishType === 'service' ? '发布服务' : '发布商品')}}</text>
+  <text class="form-hint">带 * 的项目为必填</text>
+  <view class="section-label">照片 *（{{images.length}}/9）</view>
   <view class="image-grid">
     <view class="image-item" wx:for="{{images}}" wx:key="index">
       <image class="uploaded-img" src="{{item}}" mode="aspectFill"></image>
@@ -19,11 +13,20 @@
       <text class="add-text">拍照/相册</text>
     </view>
   </view>
+  <view class="section-label">短视频（选填）</view>
+  <view class="video-upload" wx:if="{{!videoPath}}" bindtap="onChooseVideo">
+    <text class="video-add-icon">▶</text>
+    <text class="video-add-text">上传短视频</text>
+  </view>
+  <view class="video-preview" wx:else>
+    <video class="video-player" src="{{videoPath}}" controls></video>
+    <view class="img-delete" bindtap="onDeleteVideo">✕</view>
+  </view>
 </view>
 
 <!-- 发布表单 -->
 <view class="form-section card">
-  <view class="section-label">📝 发布信息</view>
+  <view class="section-label">发布信息</view>
 
   <!-- 标题 -->
   <view class="form-item">
@@ -32,11 +35,13 @@
            value="{{title}}" bindinput="onTitleInput" maxlength="50"/>
   </view>
 
-  <!-- 描述 -->
+  <!-- 价格 + 智能定价 -->
   <view class="form-item">
-    <text class="form-label">描述 <text class="required">*</text></text>
-    <textarea class="form-textarea" placeholder="请描述物品状况、使用时间、配件等信息..." 
-              value="{{description}}" bindinput="onDescInput" maxlength="200" auto-height/>
+    <text class="form-label">价格（NZD） <text class="required">*</text></text>
+    <view class="price-row">
+      <view class="price-prefix">NZ$</view>
+      <input class="price-input" type="digit" placeholder="0 表示免费" value="{{price}}" bindinput="onPriceInput"/>
+    </view>
   </view>
 
   <!-- 分类 -->
@@ -83,6 +88,13 @@
     </view>
   </block>
 
+  <!-- 描述 -->
+  <view class="form-item">
+    <text class="form-label">描述 <text class="required">*</text></text>
+    <textarea class="form-textarea" placeholder="请描述物品状况、使用时间、配件等信息..." 
+              value="{{description}}" bindinput="onDescInput" maxlength="200" auto-height/>
+  </view>
+
   <!-- 真实性承诺 -->
   <view class="form-item promise-section">
     <view class="promise-checkbox flex-row" bindtap="onTogglePromise">
@@ -92,15 +104,6 @@
       <text class="promise-text">🤝 我承诺此信息真实有效</text>
     </view>
     <text class="promise-hint" wx:if="{{promiseReal}}">已勾选真实性承诺，将获得"真实承诺"徽章</text>
-  </view>
-
-  <!-- 价格 + 智能定价 -->
-  <view class="form-item">
-    <text class="form-label">价格 (NZ$) <text class="required">*</text></text>
-    <view class="price-row">
-      <view class="price-prefix">NZ$</view>
-      <input class="price-input" type="digit" placeholder="0" value="{{price}}" bindinput="onPriceInput"/>
-    </view>
   </view>
 
   <!-- 联系方式 -->
@@ -113,8 +116,9 @@
 
 <!-- 提交按钮 -->
 <view class="submit-section">
+  <text wx:if="{{uploadStatus}}" class="upload-status">{{uploadStatus}}</text>
   <button class="submit-btn" bindtap="onSubmit" disabled="{{submitting}}">
-    {{submitting ? (isEdit ? '保存中...' : '发布中...') : (isEdit ? '保存修改' : '立即发布')}}
+    {{submitting ? (isEdit ? '保存中...' : '发布中...') : (isEdit ? '保存修改' : '检查并发布')}}
   </button>
   <text class="submit-tip">发布即表示你承诺内容合法、真实且符合平台规则</text>
 </view>

@@ -1,3 +1,4 @@
+const { formatMarketPrice } = require('../../../utils/price-format');
 const messageCloud = require('../../../utils/message-cloud');
 const itemRouter = require('../../../utils/item-router');
 const marketCloud = require('../../../utils/market-cloud');
@@ -32,6 +33,7 @@ Page({
     isFavorited: false,
     favoriteBusy: false,
     currentImageIndex: 0,
+    failedPhotos: {},
     sellerName: '匿名用户',
     sellerAvatarUrl: '',
     sellerInitial: '用',
@@ -48,6 +50,7 @@ Page({
   },
 
   async onLoad(options) {
+    this._detailOptions = options;
     var rawId = '';
     try { rawId = options.id ? decodeURIComponent(options.id) : ''; } catch (e) { rawId = options.id || ''; }
     var id = /^\d+$/.test(rawId) ? Number(rawId) : rawId;
@@ -79,12 +82,15 @@ Page({
     this.showItem(item);
   },
 
+  retryDetail() { this.setData({ loading: true, loadError: '' }); this.onLoad(this._detailOptions || {}); },
+
   showItem(item, cached) {
     const title = String(item.title || '').trim();
     const description = String(item.description || '').trim();
     this.setData({
-      item,
+      item: { ...item, campusPrice: formatMarketPrice(item.price) },
       currentImageIndex: 0,
+      failedPhotos: {},
       showDescription: !!description && description !== title,
       ownershipResolved: !cached || typeof item.isOwner === 'boolean',
       isOwner: item.isOwner === true,
@@ -101,6 +107,14 @@ Page({
 
   findItem: function(id, itemType, source) {
     return itemRouter.resolveItem(id, itemType, source);
+  },
+
+  onPhotoError(e) {
+    const index = Number(e.currentTarget.dataset.index);
+    const src = e.currentTarget.dataset.src;
+    if (Array.isArray(this.data.item.images) && this.data.item.images[index] === src) {
+      this.setData({ ['failedPhotos.' + index]: true });
+    }
   },
 
   onSwiperChange(e) {

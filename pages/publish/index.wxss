@@ -322,3 +322,10 @@
 .check-box.checked { background: #4A90D9; border-color: #4A90D9; }
 .promise-text { font-size: 26rpx; color: #333; }
 .promise-hint { font-size: 22rpx; color: #4CAF50; margin-top: 6rpx; padding-left: 52rpx; }
+
+.image-section,.form-section,.submit-section { margin: 12px 16px; padding: 16px; border-radius: 16px; box-sizing: border-box; }
+.image-section>.campus-h1,.form-hint,.upload-status { display: block; }
+.section-label { margin: 12px 0; color: #172E43; font-size: 17px; }
+.form-item { margin-bottom: 14px; } .form-input,.form-picker,.price-input { min-height: 44px; }
+.submit-btn { min-height: 48px; line-height: 48px; background: #215B98; border-radius: 12px; }
+.upload-status { margin-bottom: 8px; color: #215B98; font-size: 14px; }

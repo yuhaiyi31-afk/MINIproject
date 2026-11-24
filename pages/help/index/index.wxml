@@ -1,7 +1,12 @@
+<view class="services-header"><view class="services-heading"><text class="campus-h1">按需求找服务</text><button class="campus-primary" bindtap="onPublishTap">发布服务</button></view>
+<view class="service-groups"><view class="service-group {{index === 1 ? 'service-group-middle' : ''}}" wx:for="{{groups}}" wx:key="label" bindtap="chooseGroup" data-index="{{index}}" aria-role="button">
+  <image class="service-group-icon" src="/assets/icons/home/{{item.icon}}.svg" mode="aspectFit"/><text class="service-group-label">{{item.label}}</text><text class="service-group-detail">{{item.detail}}</text>
+</view></view></view>
 <!-- 顶部分类Tab -->
 <scroll-view class="category-tabs" scroll-x>
-  <view class="tab-item {{currentTab === index ? 'tab-active' : ''}}" 
-        wx:for="{{tabs}}" wx:key="index" 
+  <view class="tab-item {{currentTab === 8 ? 'tab-active' : ''}}" bindtap="showAll">全部</view>
+  <view wx:if="{{index < 8}}" class="tab-item {{currentTab === index ? 'tab-active' : ''}}" 
+        wx:for="{{tabs}}" wx:key="*this" 
         bindtap="onTabChange" data-index="{{index}}">
     {{item}}
   </view>
@@ -26,7 +31,7 @@
 
     <view class="flex-between" style="margin-top: 16rpx;">
       <view class="flex-row" style="gap:8rpx;">
-        <text class="service-contact">通过小程序聊天联系</text>
+        <text class="service-contact">站内联系</text>
         <text class="badge-promise" wx:if="{{item.isPromise}}">🤝 承诺真实</text>
       </view>
       <text class="text-muted">{{item.time}}</text>
@@ -36,13 +41,9 @@
 
 <view class="empty-tip" wx:if="{{filteredList.length === 0}}">
   <text class="text-muted">{{loading ? '正在读取真实信息…' : (errorText || '暂无相关服务信息')}}</text>
-  <view class="empty-publish-btn" bindtap="onPublishTap" data-type="{{tabs[currentTab]}}">
-    <text>＋ 发布第一条{{tabs[currentTab]}}信息</text>
+  <button wx:if="{{errorText}}" class="campus-secondary" bindtap="retryServices">重新加载</button>
+  <view wx:elif="{{!loading}}" class="empty-publish-btn" bindtap="onPublishTap" data-type="{{tabs[currentTab]}}">
+    <text>发布服务</text>
   </view>
 </view>
 
-<!-- 悬浮发布按钮 -->
-<view class="fab-btn" bindtap="onPublishTap" data-type="{{tabs[currentTab]}}">
-  <text class="fab-icon">＋</text>
-  <text class="fab-text">发布</text>
-</view>

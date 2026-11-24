@@ -1,0 +1,46 @@
+{
+  "color": {
+    "brand": "#4A90D9",
+    "action": "#215B98",
+    "ink": "#172E43",
+    "muted": "#526778",
+    "canvas": "#F4F7F9",
+    "surface": "#FFFFFF",
+    "line": "#D9E3EA",
+    "tint": "#E8F2FC",
+    "price": "#A63E1F",
+    "positive": "#196747",
+    "danger": "#A6363D"
+  },
+  "space": [
+    4,
+    8,
+    12,
+    16,
+    24,
+    32
+  ],
+  "type": {
+    "display": 26,
+    "title": 20,
+    "body": 15,
+    "label": 13,
+    "meta": 12
+  },
+  "radius": {
+    "card": 16,
+    "control": 12,
+    "pill": 22
+  },
+  "size": {
+    "hit": 44,
+    "button": 48,
+    "icon": 20,
+    "tab": 56
+  },
+  "media": {
+    "width": 4,
+    "height": 3
+  },
+  "maxWebWidth": 460
+}
